@@ -149,11 +149,12 @@ public class WritingProcess{
 	 * @param Plan : the Mission variable send by MMT
 	 * @param agents : List<UPPAgentVehicle> variable 
 	 */
-	public void ModifyTemplate(Mission Plan, List<UPPAgentVehicle> agents)
+	public void ModifyTemplate(Mission Plan, List<UPPAgentVehicle> agents, String input, String output)
 	{
 		try {
 			//We get our template that we will fill with info 
-		    File inputFile = new File("res\\final_example.xml");
+		    //File inputFile = new File("res\\final_example.xml");
+			File inputFile = new File(input);
 		    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 		    DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 		    Document doc = docBuilder.parse(inputFile);
@@ -345,7 +346,8 @@ public class WritingProcess{
 	        Transformer transformer = transformerFactory.newTransformer();
 	        DOMSource source = new DOMSource(doc);
 	        System.out.println("-----------Modified File-----------");
-	        StreamResult consoleResult = new StreamResult("model\\final_example.xml");
+	        //StreamResult consoleResult = new StreamResult("model\\final_example.xml");
+	        StreamResult consoleResult = new StreamResult(output);
 	        transformer.transform(source, consoleResult);
 		    
 		}

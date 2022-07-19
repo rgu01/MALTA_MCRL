@@ -29,7 +29,7 @@ bool isBusy(int taskID)
     return busy;
 }
 
-const int rules[MilestoneNum]={0,3,4,4,0,1};
+const int rules[MilestoneNum]={0,4,5,5,1,2};
 const int RegularTaskNum[AgentNum] = {4,4};
 chan move[AgentNum], initialize;
 
@@ -52,30 +52,30 @@ clock globalTime;
 </location>
 <location id ="F0T1" x ="-150" y ="-100">
 <name >F0T1</name>
-<label kind ="invariant">t&lt;=140</label>
+<label kind ="invariant">t&lt;=105</label>
 </location>
 <location id ="F0T2" x ="0" y ="-100">
 <name >F0T2</name>
-<label kind ="invariant">t&lt;=67</label>
+<label kind ="invariant">t&lt;=146</label>
 </location>
 <location id ="F0T3" x ="150" y ="-100">
 <name >F0T3</name>
-<label kind ="invariant">t&lt;=162</label>
+<label kind ="invariant">t&lt;=53</label>
 </location>
 <location id ="F0T4" x ="300" y ="-100">
 <name >F0T4</name>
-<label kind ="invariant">t&lt;=124</label>
+<label kind ="invariant">t&lt;=23</label>
 </location>
 <location id ="F0T5" x ="450" y ="-100">
 <name >F0T5</name>
-<label kind ="invariant">t&lt;=151</label>
+<label kind ="invariant">t&lt;=102</label>
 </location>
 <location id ="P1" x ="-250" y ="-50">
 <name >P1</name>
 </location>
 <location id ="F1T0" x ="-300" y ="50">
 <name >F1T0</name>
-<label kind ="invariant">t&lt;=140</label>
+<label kind ="invariant">t&lt;=105</label>
 </location>
 <location id ="F1T2" x ="0" y ="50">
 <name >F1T2</name>
@@ -98,7 +98,7 @@ clock globalTime;
 </location>
 <location id ="F2T0" x ="-300" y ="200">
 <name >F2T0</name>
-<label kind ="invariant">t&lt;=67</label>
+<label kind ="invariant">t&lt;=146</label>
 </location>
 <location id ="F2T1" x ="-150" y ="200">
 <name >F2T1</name>
@@ -121,7 +121,7 @@ clock globalTime;
 </location>
 <location id ="F3T0" x ="-300" y ="350">
 <name >F3T0</name>
-<label kind ="invariant">t&lt;=162</label>
+<label kind ="invariant">t&lt;=53</label>
 </location>
 <location id ="F3T1" x ="-150" y ="350">
 <name >F3T1</name>
@@ -144,7 +144,7 @@ clock globalTime;
 </location>
 <location id ="F4T0" x ="-300" y ="500">
 <name >F4T0</name>
-<label kind ="invariant">t&lt;=124</label>
+<label kind ="invariant">t&lt;=23</label>
 </location>
 <location id ="F4T1" x ="-150" y ="500">
 <name >F4T1</name>
@@ -167,7 +167,7 @@ clock globalTime;
 </location>
 <location id ="F5T0" x ="-300" y ="650">
 <name >F5T0</name>
-<label kind ="invariant">t&lt;=151</label>
+<label kind ="invariant">t&lt;=102</label>
 </location>
 <location id ="F5T1" x ="-150" y ="650">
 <name >F5T1</name>
@@ -201,7 +201,7 @@ clock globalTime;
 <source ref ="F0T1" />
 <target ref ="P1" />
 <label kind ="assignment">t=0,position[id][1]=true</label>
-<label kind ="guard">t&gt;=140</label>
+<label kind ="guard">t&gt;=105</label>
 </transition>
 <transition >
 <source ref ="P0" />
@@ -213,7 +213,7 @@ clock globalTime;
 <source ref ="F0T2" />
 <target ref ="P2" />
 <label kind ="assignment">t=0,position[id][2]=true</label>
-<label kind ="guard">t&gt;=67</label>
+<label kind ="guard">t&gt;=146</label>
 </transition>
 <transition >
 <source ref ="P0" />
@@ -225,7 +225,7 @@ clock globalTime;
 <source ref ="F0T3" />
 <target ref ="P3" />
 <label kind ="assignment">t=0,position[id][3]=true</label>
-<label kind ="guard">t&gt;=162</label>
+<label kind ="guard">t&gt;=53</label>
 </transition>
 <transition >
 <source ref ="P0" />
@@ -237,7 +237,7 @@ clock globalTime;
 <source ref ="F0T4" />
 <target ref ="P4" />
 <label kind ="assignment">t=0,position[id][4]=true</label>
-<label kind ="guard">t&gt;=124</label>
+<label kind ="guard">t&gt;=23</label>
 </transition>
 <transition >
 <source ref ="P0" />
@@ -249,7 +249,7 @@ clock globalTime;
 <source ref ="F0T5" />
 <target ref ="P5" />
 <label kind ="assignment">t=0,position[id][5]=true</label>
-<label kind ="guard">t&gt;=151</label>
+<label kind ="guard">t&gt;=102</label>
 </transition>
 <transition >
 <source ref ="P1" />
@@ -261,7 +261,7 @@ clock globalTime;
 <source ref ="F1T0" />
 <target ref ="P0" />
 <label kind ="assignment">t=0,position[id][0]=true</label>
-<label kind ="guard">t&gt;=140</label>
+<label kind ="guard">t&gt;=105</label>
 </transition>
 <transition >
 <source ref ="P1" />
@@ -321,7 +321,7 @@ clock globalTime;
 <source ref ="F2T0" />
 <target ref ="P0" />
 <label kind ="assignment">t=0,position[id][0]=true</label>
-<label kind ="guard">t&gt;=67</label>
+<label kind ="guard">t&gt;=146</label>
 </transition>
 <transition >
 <source ref ="P2" />
@@ -381,7 +381,7 @@ clock globalTime;
 <source ref ="F3T0" />
 <target ref ="P0" />
 <label kind ="assignment">t=0,position[id][0]=true</label>
-<label kind ="guard">t&gt;=162</label>
+<label kind ="guard">t&gt;=53</label>
 </transition>
 <transition >
 <source ref ="P3" />
@@ -441,7 +441,7 @@ clock globalTime;
 <source ref ="F4T0" />
 <target ref ="P0" />
 <label kind ="assignment">t=0,position[id][0]=true</label>
-<label kind ="guard">t&gt;=124</label>
+<label kind ="guard">t&gt;=23</label>
 </transition>
 <transition >
 <source ref ="P4" />
@@ -501,7 +501,7 @@ clock globalTime;
 <source ref ="F5T0" />
 <target ref ="P0" />
 <label kind ="assignment">t=0,position[id][0]=true</label>
-<label kind ="guard">t&gt;=151</label>
+<label kind ="guard">t&gt;=102</label>
 </transition>
 <transition >
 <source ref ="P5" />
@@ -588,72 +588,84 @@ void updateIteration()
 <location id ="T0" x ="-400" y ="-200">
 <name >T0</name>
 </location>
-<location id ="T3" x ="-400" y ="100">
-<name >T3</name>
+<location id ="T4" x ="-700" y ="-200">
+<name >T4</name>
 <label kind ="invariant">t&lt;=115</label>
 </location>
-<location id ="T4" x ="-700" y ="-400">
-<name >T4</name>
+<location id ="T5" x ="-400" y ="-500">
+<name >T5</name>
 <label kind ="invariant">t&lt;=130</label>
 </location>
-<location id ="T0" x ="-700" y ="-400">
-<name >T0</name>
+<location id ="T1" x ="-400" y ="-500">
+<name >T1</name>
 <label kind ="invariant">t&lt;=120</label>
 </location>
-<location id ="T1" x ="-200" y ="-500">
-<name >T1</name>
+<location id ="T2" x ="-100" y ="-200">
+<name >T2</name>
 <label kind ="invariant">t&lt;=100</label>
 </location>
 <init ref ="T0" />
 <transition >
 <source ref ="T0" />
-<target ref ="T3" />
-<label kind ="assignment">t=0,ts[id][3]=true,tf[id][3]=false</label>
-<label kind ="guard">(S1)&amp;&amp;(position[id][1])</label>
-</transition>
-<transition >
-<source ref ="T3" />
 <target ref ="T0" />
-<label kind ="assignment" x ="30" y ="-20">t=0,ts[id][3]=false,tf[id][3]=true,
-updateIteration()</label>
-<label kind ="guard" x ="0" y ="-50">t&gt;=110</label>
-<nail x ="0" y ="-50" />
+<label kind ="synchronisation">move[id]!</label>
+<label kind ="assignment">t=0</label>
 </transition>
 <transition >
 <source ref ="T0" />
 <target ref ="T4" />
 <label kind ="assignment">t=0,ts[id][4]=true,tf[id][4]=false</label>
-<label kind ="guard">(F2 AND F3)&amp;&amp;(position[id][2]||position[id][3])</label>
+<label kind ="guard">(S1)&amp;&amp;(position[id][1])</label>
 </transition>
 <transition >
 <source ref ="T4" />
 <target ref ="T0" />
-<label kind ="assignment" x ="-520" y ="-20">t=0,ts[id][4]=false,tf[id][4]=true,
+<label kind ="assignment" x ="-520" y ="30">t=0,ts[id][4]=false,tf[id][4]=true,
 updateIteration()</label>
-<label kind ="guard" x ="-550" y ="-50">t&gt;=120</label>
-<nail x ="-550" y ="-50" />
+<label kind ="guard" x ="-550" y ="0">t&gt;=110</label>
+<nail x ="-550" y ="0" />
 </transition>
 <transition >
 <source ref ="T0" />
+<target ref ="T5" />
+<label kind ="assignment">t=0,ts[id][5]=true,tf[id][5]=false</label>
+<label kind ="guard">(F2 AND F3)&amp;&amp;(position[id][2]||position[id][3])</label>
+</transition>
+<transition >
+<source ref ="T5" />
 <target ref ="T0" />
-<label kind ="assignment" x ="-470" y ="-20">t=0,ts[id][0]=false,tf[id][0]=true,
+<label kind ="assignment" x ="-520" y ="-320">t=0,ts[id][5]=false,tf[id][5]=true,
 updateIteration()</label>
-<label kind ="guard" x ="-500" y ="-50">t&gt;=100</label>
-<nail x ="-500" y ="-50" />
+<label kind ="guard" x ="-550" y ="-350">t&gt;=120</label>
+<nail x ="-550" y ="-350" />
 </transition>
 <transition >
 <source ref ="T0" />
 <target ref ="T1" />
 <label kind ="assignment">t=0,ts[id][1]=true,tf[id][1]=false</label>
-<label kind ="guard">(F1)&amp;&amp;(position[id][5])</label>
+<label kind ="guard">position[id][4]</label>
 </transition>
 <transition >
 <source ref ="T1" />
 <target ref ="T0" />
-<label kind ="assignment" x ="-270" y ="-20">t=0,ts[id][1]=false,tf[id][1]=true,
+<label kind ="assignment" x ="-520" y ="-320">t=0,ts[id][1]=false,tf[id][1]=true,
 updateIteration()</label>
-<label kind ="guard" x ="-300" y ="-50">t&gt;=90</label>
-<nail x ="-300" y ="-50" />
+<label kind ="guard" x ="-550" y ="-350">t&gt;=100</label>
+<nail x ="-550" y ="-350" />
+</transition>
+<transition >
+<source ref ="T0" />
+<target ref ="T2" />
+<label kind ="assignment">t=0,ts[id][2]=true,tf[id][2]=false</label>
+<label kind ="guard">(F1)&amp;&amp;(position[id][5])</label>
+</transition>
+<transition >
+<source ref ="T2" />
+<target ref ="T0" />
+<label kind ="assignment" x ="-220" y ="-320">t=0,ts[id][2]=false,tf[id][2]=true,
+updateIteration()</label>
+<label kind ="guard" x ="-250" y ="-350">t&gt;=90</label>
+<nail x ="-250" y ="-350" />
 </transition>
 </template>
 <template >
@@ -1206,72 +1218,84 @@ void updateIteration()
 <location id ="T0" x ="-400" y ="-200">
 <name >T0</name>
 </location>
-<location id ="T3" x ="-400" y ="100">
-<name >T3</name>
+<location id ="T4" x ="-700" y ="-200">
+<name >T4</name>
 <label kind ="invariant">t&lt;=115</label>
 </location>
-<location id ="T4" x ="-700" y ="-400">
-<name >T4</name>
+<location id ="T5" x ="-400" y ="-500">
+<name >T5</name>
 <label kind ="invariant">t&lt;=130</label>
 </location>
-<location id ="T0" x ="-700" y ="-400">
-<name >T0</name>
+<location id ="T1" x ="-400" y ="-500">
+<name >T1</name>
 <label kind ="invariant">t&lt;=120</label>
 </location>
-<location id ="T1" x ="-200" y ="-500">
-<name >T1</name>
+<location id ="T2" x ="-100" y ="-200">
+<name >T2</name>
 <label kind ="invariant">t&lt;=100</label>
 </location>
 <init ref ="T0" />
 <transition >
 <source ref ="T0" />
-<target ref ="T3" />
-<label kind ="assignment">t=0,ts[id][3]=true,tf[id][3]=false</label>
-<label kind ="guard">(S1)&amp;&amp;(position[id][1])</label>
-</transition>
-<transition >
-<source ref ="T3" />
 <target ref ="T0" />
-<label kind ="assignment" x ="30" y ="-20">t=0,ts[id][3]=false,tf[id][3]=true,
-updateIteration()</label>
-<label kind ="guard" x ="0" y ="-50">t&gt;=110</label>
-<nail x ="0" y ="-50" />
+<label kind ="synchronisation">move[id]!</label>
+<label kind ="assignment">t=0</label>
 </transition>
 <transition >
 <source ref ="T0" />
 <target ref ="T4" />
 <label kind ="assignment">t=0,ts[id][4]=true,tf[id][4]=false</label>
-<label kind ="guard">(F2 AND F3)&amp;&amp;(position[id][2]||position[id][3])</label>
+<label kind ="guard">(S1)&amp;&amp;(position[id][1])</label>
 </transition>
 <transition >
 <source ref ="T4" />
 <target ref ="T0" />
-<label kind ="assignment" x ="-520" y ="-20">t=0,ts[id][4]=false,tf[id][4]=true,
+<label kind ="assignment" x ="-520" y ="30">t=0,ts[id][4]=false,tf[id][4]=true,
 updateIteration()</label>
-<label kind ="guard" x ="-550" y ="-50">t&gt;=120</label>
-<nail x ="-550" y ="-50" />
+<label kind ="guard" x ="-550" y ="0">t&gt;=110</label>
+<nail x ="-550" y ="0" />
 </transition>
 <transition >
 <source ref ="T0" />
+<target ref ="T5" />
+<label kind ="assignment">t=0,ts[id][5]=true,tf[id][5]=false</label>
+<label kind ="guard">(F2 AND F3)&amp;&amp;(position[id][2]||position[id][3])</label>
+</transition>
+<transition >
+<source ref ="T5" />
 <target ref ="T0" />
-<label kind ="assignment" x ="-470" y ="-20">t=0,ts[id][0]=false,tf[id][0]=true,
+<label kind ="assignment" x ="-520" y ="-320">t=0,ts[id][5]=false,tf[id][5]=true,
 updateIteration()</label>
-<label kind ="guard" x ="-500" y ="-50">t&gt;=100</label>
-<nail x ="-500" y ="-50" />
+<label kind ="guard" x ="-550" y ="-350">t&gt;=120</label>
+<nail x ="-550" y ="-350" />
 </transition>
 <transition >
 <source ref ="T0" />
 <target ref ="T1" />
 <label kind ="assignment">t=0,ts[id][1]=true,tf[id][1]=false</label>
-<label kind ="guard">(F1)&amp;&amp;(position[id][5])</label>
+<label kind ="guard">position[id][4]</label>
 </transition>
 <transition >
 <source ref ="T1" />
 <target ref ="T0" />
-<label kind ="assignment" x ="-270" y ="-20">t=0,ts[id][1]=false,tf[id][1]=true,
+<label kind ="assignment" x ="-520" y ="-320">t=0,ts[id][1]=false,tf[id][1]=true,
 updateIteration()</label>
-<label kind ="guard" x ="-300" y ="-50">t&gt;=90</label>
-<nail x ="-300" y ="-50" />
+<label kind ="guard" x ="-550" y ="-350">t&gt;=100</label>
+<nail x ="-550" y ="-350" />
+</transition>
+<transition >
+<source ref ="T0" />
+<target ref ="T2" />
+<label kind ="assignment">t=0,ts[id][2]=true,tf[id][2]=false</label>
+<label kind ="guard">(F1)&amp;&amp;(position[id][5])</label>
+</transition>
+<transition >
+<source ref ="T2" />
+<target ref ="T0" />
+<label kind ="assignment" x ="-220" y ="-320">t=0,ts[id][2]=false,tf[id][2]=true,
+updateIteration()</label>
+<label kind ="guard" x ="-250" y ="-350">t&gt;=90</label>
+<nail x ="-250" y ="-350" />
 </transition>
 </template>
 <system >movement0 = Movement0(0);

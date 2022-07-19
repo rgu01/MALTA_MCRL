@@ -54,6 +54,8 @@ public class PlannerServiceHandler implements PlannerService.Iface {
 	public static String timeLogFile = "./results/time.log";
 	public static String logFileDali = "./results/dali.log";
 	public static String logFileDaliStar = "./results/dalistar.log";
+	public static String mocrel_template = "./res/mocrel_template.xml";
+	public static String mocrel_model = "./model/mocrel_model.xml";
 	private boolean UseMultiTargetPathPlanning = false;
 	private boolean ownModel;
 	private String ownModelAddress;
@@ -121,7 +123,7 @@ public class PlannerServiceHandler implements PlannerService.Iface {
 			/**Test for template**/
 			/**********************************************************************/			
 			WritingProcess write = new WritingProcess();
-			write.ModifyTemplate(plan, this.agents);
+			write.ModifyTemplate(plan, this.agents, mocrel_template, mocrel_model);
 			/**********************************************************************/
 			
 			
