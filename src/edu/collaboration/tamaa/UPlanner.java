@@ -94,35 +94,6 @@ public class UPlanner extends Thread {
 			JOptionPane.showMessageDialog(null, e.getMessage(), "ERROR", JOptionPane.PLAIN_MESSAGE);
 		}
 	}
-	
-	public void StartServerTest(PlannerService.Processor<PlannerServiceHandlerTestVersion> processor) {
-		try {
-			TServerTransport serverTransport = new TServerSocket(this.tamaaPort);
-			// Use this for a multi-thread server
-//			TThreadPoolServer.Args args = new TThreadPoolServer.Args(serverTransport)
-//				    .minWorkerThreads(5)
-//				    .maxWorkerThreads(256)
-//				    .processor(processor)
-//				    .protocolFactory(new TBinaryProtocol.Factory());
-//			this.server = new TThreadPoolServer(args);
-//			System.out.println("Starting the multi-thread server...");
-			
-			// Use the following line for a single-thread server
-			this.server = new TSimpleServer(new Args(serverTransport).processor(processor));
-			System.out.println("Starting the simple server...");
-
-//			System.out.println(UPPAgentGenerator.class.getClassLoader().getResource("empty_template.xml").getPath());
-//			JOptionPane.showMessageDialog(null, UPPAgentGenerator.class.getClassLoader().getResource("empty_template.xml").getPath(), "DEBUG", JOptionPane.PLAIN_MESSAGE);
-//			InputStream is = new InputStream("resources/empty_template.xml");
-			
-			server.serve();
-			System.out.println("Server started...");
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(null, e.getMessage(), "ERROR", JOptionPane.PLAIN_MESSAGE);
-		}
-	}
 
 	public void logtoText() {
 		String dirName = "./results/";
