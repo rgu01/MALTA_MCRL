@@ -1,0 +1,5 @@
+MMT Address: 127.0.0.1
+MMT Port: 9096
+Planner Port: 9097
+UPPAAL Address: 192.168.56.1
+UPPAAL Port: 9779

@@ -1,0 +1,2120 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><nta>
+<declaration>// Place global declarations here.
+const int AgentNum = 1;
+typedef int[0,AgentNum-1] AgentScale;
+const int TaskNum = 10;
+const int EventNum = 0;
+const int MilestoneNum = 11;
+const int MaxIteration = 1;
+
+bool position[AgentNum][MilestoneNum]={{true,false,false,false,false,false,false,false,false,false,false}};
+bool tf[AgentNum][TaskNum]={{true,false,false,false,false,false,false,false,false,false}};
+bool ts[AgentNum][TaskNum]={{true,false,false,false,false,false,false,false,false,false}};
+
+
+bool isBusy(int taskID)
+{
+    int id = 0;
+    bool busy = false;
+
+    for(id = 0; id &lt; AgentNum; id++)
+    {
+        if(ts[id][taskID])
+        {
+            busy = true;
+            return busy;
+        }
+    }
+
+    return busy;
+}
+
+const int rules[MilestoneNum]={0,5,5,6,2,3,9,1,8,4,7};
+const int RegularTaskNum[AgentNum] = {9};
+//chan move[AgentNum], initialize;
+
+int iteration[AgentNum] = {0};
+
+clock globalTime;
+
+const int MAXTIME = 5000;
+bool idle[AgentNum] = {true};
+
+int penalty = 0; &#13;
+void punish(int agentID)&#13;
+{&#13;
+    if(penalty &lt;= MAXTIME)&#13;
+    {&#13;
+        penalty = penalty + 10;&#13;
+    }&#13;
+&#13;
+    idle[agentID] = false;&#13;
+}&#13;
+bool isNecessary(int agentID, int taskID)&#13;
+{&#13;
+    return !tf[agentID][taskID]&amp;&amp;iteration[agentID]&lt;MaxIteration;&#13;
+}&#13;
+bool isReady(int agentID, int currentPosition, int targetPosition)&#13;
+{&#13;
+    int currentTask = rules[currentPosition];&#13;
+    int targetTask = rules[targetPosition];&#13;
+    bool ready = idle[agentID]&amp;&amp;iteration[agentID]&lt;MaxIteration;&#13;
+    bool currentFinished = tf[agentID][currentTask];&#13;
+    bool targetFinished = tf[agentID][targetTask];&#13;
+&#13;
+    return ready&amp;&amp;currentFinished&amp;!targetFinished;&#13;
+}&#13;
+
+
+
+</declaration>
+<template>
+<name>Movement0</name>
+<parameter>const AgentScale id</parameter>
+<declaration>clock t;
+</declaration>
+<location id="id0" x="-500" y="-300">
+<name>initial</name>
+
+</location>
+<location id="id1" x="-400" y="-200">
+<name>P0</name>
+<committed/></location>
+<location id="id2" x="-150" y="-100">
+<name>F0T1</name>
+<label kind="invariant">t&lt;=102</label>
+</location>
+<location id="id3" x="0" y="-100">
+<name>F0T2</name>
+<label kind="invariant">t&lt;=86</label>
+</location>
+<location id="id4" x="150" y="-100">
+<name>F0T3</name>
+<label kind="invariant">t&lt;=47</label>
+</location>
+<location id="id5" x="300" y="-100">
+<name>F0T4</name>
+<label kind="invariant">t&lt;=55</label>
+</location>
+<location id="id6" x="450" y="-100">
+<name>F0T5</name>
+<label kind="invariant">t&lt;=101</label>
+</location>
+<location id="id7" x="600" y="-100">
+<name>F0T6</name>
+<label kind="invariant">t&lt;=96</label>
+</location>
+<location id="id8" x="750" y="-100">
+<name>F0T7</name>
+<label kind="invariant">t&lt;=151</label>
+</location>
+<location id="id9" x="900" y="-100">
+<name>F0T8</name>
+<label kind="invariant">t&lt;=111</label>
+</location>
+<location id="id10" x="1050" y="-100">
+<name>F0T9</name>
+<label kind="invariant">t&lt;=13</label>
+</location>
+<location id="id11" x="1200" y="-100">
+<name>F0T10</name>
+<label kind="invariant">t&lt;=64</label>
+</location>
+<location id="id12" x="-250" y="-50">
+<name>P1</name>
+</location>
+<location id="id13" x="-300" y="50">
+<name>F1T0</name>
+<label kind="invariant">t&lt;=102</label>
+</location>
+<location id="id14" x="0" y="50">
+<name>F1T2</name>
+<label kind="invariant">t&lt;=23</label>
+</location>
+<location id="id15" x="150" y="50">
+<name>F1T3</name>
+<label kind="invariant">t&lt;=95</label>
+</location>
+<location id="id16" x="300" y="50">
+<name>F1T4</name>
+<label kind="invariant">t&lt;=55</label>
+</location>
+<location id="id17" x="450" y="50">
+<name>F1T5</name>
+<label kind="invariant">t&lt;=174</label>
+</location>
+<location id="id18" x="600" y="50">
+<name>F1T6</name>
+<label kind="invariant">t&lt;=132</label>
+</location>
+<location id="id19" x="750" y="50">
+<name>F1T7</name>
+<label kind="invariant">t&lt;=164</label>
+</location>
+<location id="id20" x="900" y="50">
+<name>F1T8</name>
+<label kind="invariant">t&lt;=85</label>
+</location>
+<location id="id21" x="1050" y="50">
+<name>F1T9</name>
+<label kind="invariant">t&lt;=94</label>
+</location>
+<location id="id22" x="1200" y="50">
+<name>F1T10</name>
+<label kind="invariant">t&lt;=109</label>
+</location>
+<location id="id23" x="-100" y="100">
+<name>P2</name>
+</location>
+<location id="id24" x="-300" y="200">
+<name>F2T0</name>
+<label kind="invariant">t&lt;=86</label>
+</location>
+<location id="id25" x="-150" y="200">
+<name>F2T1</name>
+<label kind="invariant">t&lt;=23</label>
+</location>
+<location id="id26" x="150" y="200">
+<name>F2T3</name>
+<label kind="invariant">t&lt;=101</label>
+</location>
+<location id="id27" x="300" y="200">
+<name>F2T4</name>
+<label kind="invariant">t&lt;=53</label>
+</location>
+<location id="id28" x="450" y="200">
+<name>F2T5</name>
+<label kind="invariant">t&lt;=157</label>
+</location>
+<location id="id29" x="600" y="200">
+<name>F2T6</name>
+<label kind="invariant">t&lt;=111</label>
+</location>
+<location id="id30" x="750" y="200">
+<name>F2T7</name>
+<label kind="invariant">t&lt;=143</label>
+</location>
+<location id="id31" x="900" y="200">
+<name>F2T8</name>
+<label kind="invariant">t&lt;=64</label>
+</location>
+<location id="id32" x="1050" y="200">
+<name>F2T9</name>
+<label kind="invariant">t&lt;=77</label>
+</location>
+<location id="id33" x="1200" y="200">
+<name>F2T10</name>
+<label kind="invariant">t&lt;=92</label>
+</location>
+<location id="id34" x="50" y="250">
+<name>P3</name>
+</location>
+<location id="id35" x="-300" y="350">
+<name>F3T0</name>
+<label kind="invariant">t&lt;=47</label>
+</location>
+<location id="id36" x="-150" y="350">
+<name>F3T1</name>
+<label kind="invariant">t&lt;=95</label>
+</location>
+<location id="id37" x="0" y="350">
+<name>F3T2</name>
+<label kind="invariant">t&lt;=101</label>
+</location>
+<location id="id38" x="300" y="350">
+<name>F3T4</name>
+<label kind="invariant">t&lt;=55</label>
+</location>
+<location id="id39" x="450" y="350">
+<name>F3T5</name>
+<label kind="invariant">t&lt;=144</label>
+</location>
+<location id="id40" x="600" y="350">
+<name>F3T6</name>
+<label kind="invariant">t&lt;=136</label>
+</location>
+<location id="id41" x="750" y="350">
+<name>F3T7</name>
+<label kind="invariant">t&lt;=185</label>
+</location>
+<location id="id42" x="900" y="350">
+<name>F3T8</name>
+<label kind="invariant">t&lt;=131</label>
+</location>
+<location id="id43" x="1050" y="350">
+<name>F3T9</name>
+<label kind="invariant">t&lt;=54</label>
+</location>
+<location id="id44" x="1200" y="350">
+<name>F3T10</name>
+<label kind="invariant">t&lt;=104</label>
+</location>
+<location id="id45" x="200" y="400">
+<name>P4</name>
+</location>
+<location id="id46" x="-300" y="500">
+<name>F4T0</name>
+<label kind="invariant">t&lt;=55</label>
+</location>
+<location id="id47" x="-150" y="500">
+<name>F4T1</name>
+<label kind="invariant">t&lt;=55</label>
+</location>
+<location id="id48" x="0" y="500">
+<name>F4T2</name>
+<label kind="invariant">t&lt;=53</label>
+</location>
+<location id="id49" x="150" y="500">
+<name>F4T3</name>
+<label kind="invariant">t&lt;=55</label>
+</location>
+<location id="id50" x="450" y="500">
+<name>F4T5</name>
+<label kind="invariant">t&lt;=145</label>
+</location>
+<location id="id51" x="600" y="500">
+<name>F4T6</name>
+<label kind="invariant">t&lt;=117</label>
+</location>
+<location id="id52" x="750" y="500">
+<name>F4T7</name>
+<label kind="invariant">t&lt;=166</label>
+</location>
+<location id="id53" x="900" y="500">
+<name>F4T8</name>
+<label kind="invariant">t&lt;=87</label>
+</location>
+<location id="id54" x="1050" y="500">
+<name>F4T9</name>
+<label kind="invariant">t&lt;=53</label>
+</location>
+<location id="id55" x="1200" y="500">
+<name>F4T10</name>
+<label kind="invariant">t&lt;=85</label>
+</location>
+<location id="id56" x="350" y="550">
+<name>P5</name>
+</location>
+<location id="id57" x="-300" y="650">
+<name>F5T0</name>
+<label kind="invariant">t&lt;=101</label>
+</location>
+<location id="id58" x="-150" y="650">
+<name>F5T1</name>
+<label kind="invariant">t&lt;=174</label>
+</location>
+<location id="id59" x="0" y="650">
+<name>F5T2</name>
+<label kind="invariant">t&lt;=157</label>
+</location>
+<location id="id60" x="150" y="650">
+<name>F5T3</name>
+<label kind="invariant">t&lt;=144</label>
+</location>
+<location id="id61" x="300" y="650">
+<name>F5T4</name>
+<label kind="invariant">t&lt;=145</label>
+</location>
+<location id="id62" x="600" y="650">
+<name>F5T6</name>
+<label kind="invariant">t&lt;=83</label>
+</location>
+<location id="id63" x="750" y="650">
+<name>F5T7</name>
+<label kind="invariant">t&lt;=102</label>
+</location>
+<location id="id64" x="900" y="650">
+<name>F5T8</name>
+<label kind="invariant">t&lt;=119</label>
+</location>
+<location id="id65" x="1050" y="650">
+<name>F5T9</name>
+<label kind="invariant">t&lt;=95</label>
+</location>
+<location id="id66" x="1200" y="650">
+<name>F5T10</name>
+<label kind="invariant">t&lt;=65</label>
+</location>
+<location id="id67" x="500" y="700">
+<name>P6</name>
+</location>
+<location id="id68" x="-300" y="800">
+<name>F6T0</name>
+<label kind="invariant">t&lt;=96</label>
+</location>
+<location id="id69" x="-150" y="800">
+<name>F6T1</name>
+<label kind="invariant">t&lt;=132</label>
+</location>
+<location id="id70" x="0" y="800">
+<name>F6T2</name>
+<label kind="invariant">t&lt;=111</label>
+</location>
+<location id="id71" x="150" y="800">
+<name>F6T3</name>
+<label kind="invariant">t&lt;=136</label>
+</location>
+<location id="id72" x="300" y="800">
+<name>F6T4</name>
+<label kind="invariant">t&lt;=117</label>
+</location>
+<location id="id73" x="450" y="800">
+<name>F6T5</name>
+<label kind="invariant">t&lt;=83</label>
+</location>
+<location id="id74" x="750" y="800">
+<name>F6T7</name>
+<label kind="invariant">t&lt;=66</label>
+</location>
+<location id="id75" x="900" y="800">
+<name>F6T8</name>
+<label kind="invariant">t&lt;=49</label>
+</location>
+<location id="id76" x="1050" y="800">
+<name>F6T9</name>
+<label kind="invariant">t&lt;=82</label>
+</location>
+<location id="id77" x="1200" y="800">
+<name>F6T10</name>
+<label kind="invariant">t&lt;=31</label>
+</location>
+<location id="id78" x="650" y="850">
+<name>P7</name>
+</location>
+<location id="id79" x="-300" y="950">
+<name>F7T0</name>
+<label kind="invariant">t&lt;=151</label>
+</location>
+<location id="id80" x="-150" y="950">
+<name>F7T1</name>
+<label kind="invariant">t&lt;=164</label>
+</location>
+<location id="id81" x="0" y="950">
+<name>F7T2</name>
+<label kind="invariant">t&lt;=143</label>
+</location>
+<location id="id82" x="150" y="950">
+<name>F7T3</name>
+<label kind="invariant">t&lt;=185</label>
+</location>
+<location id="id83" x="300" y="950">
+<name>F7T4</name>
+<label kind="invariant">t&lt;=166</label>
+</location>
+<location id="id84" x="450" y="950">
+<name>F7T5</name>
+<label kind="invariant">t&lt;=102</label>
+</location>
+<location id="id85" x="600" y="950">
+<name>F7T6</name>
+<label kind="invariant">t&lt;=66</label>
+</location>
+<location id="id86" x="900" y="950">
+<name>F7T8</name>
+<label kind="invariant">t&lt;=78</label>
+</location>
+<location id="id87" x="1050" y="950">
+<name>F7T9</name>
+<label kind="invariant">t&lt;=137</label>
+</location>
+<location id="id88" x="1200" y="950">
+<name>F7T10</name>
+<label kind="invariant">t&lt;=93</label>
+</location>
+<location id="id89" x="800" y="1000">
+<name>P8</name>
+</location>
+<location id="id90" x="-300" y="1100">
+<name>F8T0</name>
+<label kind="invariant">t&lt;=111</label>
+</location>
+<location id="id91" x="-150" y="1100">
+<name>F8T1</name>
+<label kind="invariant">t&lt;=85</label>
+</location>
+<location id="id92" x="0" y="1100">
+<name>F8T2</name>
+<label kind="invariant">t&lt;=64</label>
+</location>
+<location id="id93" x="150" y="1100">
+<name>F8T3</name>
+<label kind="invariant">t&lt;=131</label>
+</location>
+<location id="id94" x="300" y="1100">
+<name>F8T4</name>
+<label kind="invariant">t&lt;=87</label>
+</location>
+<location id="id95" x="450" y="1100">
+<name>F8T5</name>
+<label kind="invariant">t&lt;=119</label>
+</location>
+<location id="id96" x="600" y="1100">
+<name>F8T6</name>
+<label kind="invariant">t&lt;=49</label>
+</location>
+<location id="id97" x="750" y="1100">
+<name>F8T7</name>
+<label kind="invariant">t&lt;=78</label>
+</location>
+<location id="id98" x="1050" y="1100">
+<name>F8T9</name>
+<label kind="invariant">t&lt;=100</label>
+</location>
+<location id="id99" x="1200" y="1100">
+<name>F8T10</name>
+<label kind="invariant">t&lt;=56</label>
+</location>
+<location id="id100" x="950" y="1150">
+<name>P9</name>
+</location>
+<location id="id101" x="-300" y="1250">
+<name>F9T0</name>
+<label kind="invariant">t&lt;=13</label>
+</location>
+<location id="id102" x="-150" y="1250">
+<name>F9T1</name>
+<label kind="invariant">t&lt;=94</label>
+</location>
+<location id="id103" x="0" y="1250">
+<name>F9T2</name>
+<label kind="invariant">t&lt;=77</label>
+</location>
+<location id="id104" x="150" y="1250">
+<name>F9T3</name>
+<label kind="invariant">t&lt;=54</label>
+</location>
+<location id="id105" x="300" y="1250">
+<name>F9T4</name>
+<label kind="invariant">t&lt;=53</label>
+</location>
+<location id="id106" x="450" y="1250">
+<name>F9T5</name>
+<label kind="invariant">t&lt;=95</label>
+</location>
+<location id="id107" x="600" y="1250">
+<name>F9T6</name>
+<label kind="invariant">t&lt;=82</label>
+</location>
+<location id="id108" x="750" y="1250">
+<name>F9T7</name>
+<label kind="invariant">t&lt;=137</label>
+</location>
+<location id="id109" x="900" y="1250">
+<name>F9T8</name>
+<label kind="invariant">t&lt;=100</label>
+</location>
+<location id="id110" x="1200" y="1250">
+<name>F9T10</name>
+<label kind="invariant">t&lt;=50</label>
+</location>
+<location id="id111" x="1100" y="1300">
+<name>P10</name>
+</location>
+<location id="id112" x="-300" y="1400">
+<name>F10T0</name>
+<label kind="invariant">t&lt;=64</label>
+</location>
+<location id="id113" x="-150" y="1400">
+<name>F10T1</name>
+<label kind="invariant">t&lt;=109</label>
+</location>
+<location id="id114" x="0" y="1400">
+<name>F10T2</name>
+<label kind="invariant">t&lt;=92</label>
+</location>
+<location id="id115" x="150" y="1400">
+<name>F10T3</name>
+<label kind="invariant">t&lt;=104</label>
+</location>
+<location id="id116" x="300" y="1400">
+<name>F10T4</name>
+<label kind="invariant">t&lt;=85</label>
+</location>
+<location id="id117" x="450" y="1400">
+<name>F10T5</name>
+<label kind="invariant">t&lt;=65</label>
+</location>
+<location id="id118" x="600" y="1400">
+<name>F10T6</name>
+<label kind="invariant">t&lt;=31</label>
+</location>
+<location id="id119" x="750" y="1400">
+<name>F10T7</name>
+<label kind="invariant">t&lt;=93</label>
+</location>
+<location id="id120" x="900" y="1400">
+<name>F10T8</name>
+<label kind="invariant">t&lt;=56</label>
+</location>
+<location id="id121" x="1050" y="1400">
+<name>F10T9</name>
+<label kind="invariant">t&lt;=50</label>
+</location>
+<init ref="id1"/>
+<transition>
+<source ref="id0"/>
+<target ref="id1"/>
+<label kind="assignment">position[id][0]=true</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id2"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id2"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=102</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id3"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id3"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=86</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id4"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id4"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=47</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id5"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id5"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=55</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id6"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id6"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=101</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id7"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id7"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=96</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id8"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id8"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=151</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id9"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id9"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=111</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id10"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id10"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=13</label>
+</transition>
+<transition>
+<source ref="id1"/>
+<target ref="id11"/>
+<label kind="assignment">t=0,position[id][0]=false,punish(id)</label>
+<label kind="guard">isReady(id,0,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id11"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=64</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id13"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id13"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=102</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id14"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id14"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=23</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id15"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id15"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=95</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id16"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id16"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=55</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id17"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id17"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=174</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id18"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id18"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=132</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id19"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id19"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=164</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id20"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id20"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=85</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id21"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id21"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=94</label>
+</transition>
+<transition>
+<source ref="id12"/>
+<target ref="id22"/>
+<label kind="assignment">t=0,position[id][1]=false,punish(id)</label>
+<label kind="guard">isReady(id,1,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id22"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=109</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id24"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id24"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=86</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id25"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id25"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=23</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id26"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id26"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=101</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id27"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id27"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=53</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id28"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id28"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=157</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id29"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id29"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=111</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id30"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id30"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=143</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id31"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id31"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=64</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id32"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id32"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=77</label>
+</transition>
+<transition>
+<source ref="id23"/>
+<target ref="id33"/>
+<label kind="assignment">t=0,position[id][2]=false,punish(id)</label>
+<label kind="guard">isReady(id,2,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id33"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=92</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id35"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id35"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=47</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id36"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id36"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=95</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id37"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id37"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=101</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id38"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id38"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=55</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id39"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id39"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=144</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id40"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id40"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=136</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id41"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id41"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=185</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id42"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id42"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=131</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id43"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id43"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=54</label>
+</transition>
+<transition>
+<source ref="id34"/>
+<target ref="id44"/>
+<label kind="assignment">t=0,position[id][3]=false,punish(id)</label>
+<label kind="guard">isReady(id,3,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id44"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=104</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id46"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id46"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=55</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id47"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id47"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=55</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id48"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id48"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=53</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id49"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id49"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=55</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id50"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id50"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=145</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id51"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id51"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=117</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id52"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id52"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=166</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id53"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id53"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=87</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id54"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id54"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=53</label>
+</transition>
+<transition>
+<source ref="id45"/>
+<target ref="id55"/>
+<label kind="assignment">t=0,position[id][4]=false,punish(id)</label>
+<label kind="guard">isReady(id,4,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id55"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=85</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id57"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id57"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=101</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id58"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id58"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=174</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id59"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id59"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=157</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id60"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id60"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=144</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id61"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id61"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=145</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id62"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id62"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=83</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id63"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id63"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=102</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id64"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id64"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=119</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id65"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id65"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=95</label>
+</transition>
+<transition>
+<source ref="id56"/>
+<target ref="id66"/>
+<label kind="assignment">t=0,position[id][5]=false,punish(id)</label>
+<label kind="guard">isReady(id,5,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id66"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=65</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id68"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id68"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=96</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id69"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id69"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=132</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id70"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id70"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=111</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id71"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id71"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=136</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id72"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id72"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=117</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id73"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id73"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=83</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id74"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id74"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=66</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id75"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id75"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=49</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id76"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id76"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=82</label>
+</transition>
+<transition>
+<source ref="id67"/>
+<target ref="id77"/>
+<label kind="assignment">t=0,position[id][6]=false,punish(id)</label>
+<label kind="guard">isReady(id,6,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id77"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=31</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id79"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id79"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=151</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id80"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id80"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=164</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id81"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id81"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=143</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id82"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id82"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=185</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id83"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id83"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=166</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id84"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id84"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=102</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id85"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id85"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=66</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id86"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id86"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=78</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id87"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id87"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=137</label>
+</transition>
+<transition>
+<source ref="id78"/>
+<target ref="id88"/>
+<label kind="assignment">t=0,position[id][7]=false,punish(id)</label>
+<label kind="guard">isReady(id,7,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id88"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=93</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id90"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id90"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=111</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id91"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id91"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=85</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id92"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id92"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=64</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id93"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id93"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=131</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id94"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id94"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=87</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id95"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id95"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=119</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id96"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id96"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=49</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id97"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id97"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=78</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id98"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id98"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=100</label>
+</transition>
+<transition>
+<source ref="id89"/>
+<target ref="id99"/>
+<label kind="assignment">t=0,position[id][8]=false,punish(id)</label>
+<label kind="guard">isReady(id,8,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id99"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=56</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id101"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id101"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=13</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id102"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id102"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=94</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id103"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id103"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=77</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id104"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id104"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=54</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id105"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id105"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=53</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id106"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id106"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=95</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id107"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id107"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=82</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id108"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id108"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=137</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id109"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id109"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=100</label>
+</transition>
+<transition>
+<source ref="id100"/>
+<target ref="id110"/>
+<label kind="assignment">t=0,position[id][9]=false,punish(id)</label>
+<label kind="guard">isReady(id,9,10)</label>
+</transition>
+<transition controllable="false">
+<source ref="id110"/>
+<target ref="id111"/>
+<label kind="assignment">t=0,position[id][10]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=50</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id112"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,0)</label>
+</transition>
+<transition controllable="false">
+<source ref="id112"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,position[id][0]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=64</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id113"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id113"/>
+<target ref="id12"/>
+<label kind="assignment">t=0,position[id][1]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=109</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id114"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id114"/>
+<target ref="id23"/>
+<label kind="assignment">t=0,position[id][2]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=92</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id115"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id115"/>
+<target ref="id34"/>
+<label kind="assignment">t=0,position[id][3]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=104</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id116"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id116"/>
+<target ref="id45"/>
+<label kind="assignment">t=0,position[id][4]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=85</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id117"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id117"/>
+<target ref="id56"/>
+<label kind="assignment">t=0,position[id][5]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=65</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id118"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id118"/>
+<target ref="id67"/>
+<label kind="assignment">t=0,position[id][6]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=31</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id119"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id119"/>
+<target ref="id78"/>
+<label kind="assignment">t=0,position[id][7]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=93</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id120"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id120"/>
+<target ref="id89"/>
+<label kind="assignment">t=0,position[id][8]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=56</label>
+</transition>
+<transition>
+<source ref="id111"/>
+<target ref="id121"/>
+<label kind="assignment">t=0,position[id][10]=false,punish(id)</label>
+<label kind="guard">isReady(id,10,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id121"/>
+<target ref="id100"/>
+<label kind="assignment">t=0,position[id][9]=true,idle[id]=true</label>
+<label kind="guard">t&gt;=50</label>
+</transition>
+</template>
+<template>
+<name>TaskExecution0</name>
+<parameter>const AgentScale id</parameter>
+<declaration>clock t;
+
+void updateIteration()
+{
+	int i=0;
+	bool finish = true;
+	for(i=1;i&lt;=RegularTaskNum[id];i++)
+	{
+		finish &amp;= tf[id][i];
+	}
+	if(finish)
+	{
+		for(i=1;i&lt;=RegularTaskNum[id];i++)
+		{
+			tf[id][i]=false;
+		}
+		
+		iteration[id]+=1;
+		if(iteration[id]&gt;=MaxIteration)
+		{
+			iteration[id]=MaxIteration;
+		}
+	}
+	else
+	{
+    	finish = true;
+	}
+}
+
+void reward()&#13;
+{&#13;
+    int times = 0, i = 0;&#13;
+&#13;
+    for(i = 0; i &lt; TaskNum; i++)&#13;
+    {&#13;
+        if(tf[id][i])&#13;
+        {&#13;
+            times++;&#13;
+        }&#13;
+    }&#13;
+&#13;
+    penalty = penalty - 100 * times;&#13;
+}
+
+</declaration>
+<location id="id0" x="-400" y="-200">
+<name>T0</name>
+</location>
+<location id="id1" x="-400" y="-500">
+<name>T5</name>
+<label kind="invariant">t&lt;=50</label>
+</location>
+<location id="id2" x="-100" y="-200">
+<name>T6</name>
+<label kind="invariant">t&lt;=50</label>
+</location>
+<location id="id3" x="-100" y="-200">
+<name>T2</name>
+<label kind="invariant">t&lt;=60</label>
+</location>
+<location id="id4" x="-400" y="100">
+<name>T3</name>
+<label kind="invariant">t&lt;=90</label>
+</location>
+<location id="id5" x="-200" y="-500">
+<name>T9</name>
+<label kind="invariant">t&lt;=15</label>
+</location>
+<location id="id6" x="-200" y="-500">
+<name>T1</name>
+<label kind="invariant">t&lt;=19</label>
+</location>
+<location id="id7" x="-700" y="-400">
+<name>T8</name>
+<label kind="invariant">t&lt;=30</label>
+</location>
+<location id="id8" x="-700" y="-400">
+<name>T4</name>
+<label kind="invariant">t&lt;=20</label>
+</location>
+<location id="id9" x="-200" y="100">
+<name>T7</name>
+<label kind="invariant">t&lt;=10</label>
+</location>
+<init ref="id0"/>
+<transition>
+<source ref="id0"/>
+
+<label kind="synchronisation">move[id]!</label>
+<label kind="assignment">t=0,idle[id]=false,reward()</label>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id1"/>
+<label kind="assignment">t=0,ts[id][5]=true,tf[id][5]=false,idle[id]=false,reward()</label>
+<label kind="guard">((tf[id][4])&amp;&amp;(position[id][1]||position[id][2]))&amp;&amp;isNecessary(id,5)</label>
+</transition>
+<transition controllable="false">
+<source ref="id1"/>
+<target ref="id0"/>
+<label kind="assignment" x="30" y="-320">t=0,ts[id][5]=false,tf[id][5]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="0" y="-350">t&gt;=10</label>
+<nail x="0" y="-350"/>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id2"/>
+<label kind="assignment">t=0,ts[id][6]=true,tf[id][6]=false,idle[id]=false,reward()</label>
+<label kind="guard">((tf[id][5])&amp;&amp;(position[id][3]))&amp;&amp;isNecessary(id,6)</label>
+</transition>
+<transition controllable="false">
+<source ref="id2"/>
+<target ref="id0"/>
+<label kind="assignment" x="-220" y="-320">t=0,ts[id][6]=false,tf[id][6]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="-250" y="-350">t&gt;=20</label>
+<nail x="-250" y="-350"/>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id3"/>
+<label kind="assignment">t=0,ts[id][2]=true,tf[id][2]=false,idle[id]=false,reward()</label>
+<label kind="guard">((tf[id][1])&amp;&amp;(position[id][4]))&amp;&amp;isNecessary(id,2)</label>
+</transition>
+<transition controllable="false">
+<source ref="id3"/>
+<target ref="id0"/>
+<label kind="assignment" x="-220" y="-320">t=0,ts[id][2]=false,tf[id][2]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="-250" y="-350">t&gt;=30</label>
+<nail x="-250" y="-350"/>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id4"/>
+<label kind="assignment">t=0,ts[id][3]=true,tf[id][3]=false,idle[id]=false,reward()</label>
+<label kind="guard">((tf[id][2])&amp;&amp;(position[id][5]))&amp;&amp;isNecessary(id,3)</label>
+</transition>
+<transition controllable="false">
+<source ref="id4"/>
+<target ref="id0"/>
+<label kind="assignment" x="-220" y="-20">t=0,ts[id][3]=false,tf[id][3]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="-250" y="-50">t&gt;=30</label>
+<nail x="-250" y="-50"/>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id5"/>
+<label kind="assignment">t=0,ts[id][9]=true,tf[id][9]=false,idle[id]=false,reward()</label>
+<label kind="guard">((tf[id][8])&amp;&amp;(position[id][6]))&amp;&amp;isNecessary(id,9)</label>
+</transition>
+<transition controllable="false">
+<source ref="id5"/>
+<target ref="id0"/>
+<label kind="assignment" x="-270" y="-20">t=0,ts[id][9]=false,tf[id][9]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="-300" y="-50">t&gt;=10</label>
+<nail x="-300" y="-50"/>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id6"/>
+<label kind="assignment">t=0,ts[id][1]=true,tf[id][1]=false,idle[id]=false,reward()</label>
+<label kind="guard">(position[id][7])&amp;&amp;isNecessary(id,1)</label>
+</transition>
+<transition controllable="false">
+<source ref="id6"/>
+<target ref="id0"/>
+<label kind="assignment" x="-270" y="-20">t=0,ts[id][1]=false,tf[id][1]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="-300" y="-50">t&gt;=17</label>
+<nail x="-300" y="-50"/>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id7"/>
+<label kind="assignment">t=0,ts[id][8]=true,tf[id][8]=false,idle[id]=false,reward()</label>
+<label kind="guard">((tf[id][7])&amp;&amp;(position[id][8]))&amp;&amp;isNecessary(id,8)</label>
+</transition>
+<transition controllable="false">
+<source ref="id7"/>
+<target ref="id0"/>
+<label kind="assignment" x="-520" y="-20">t=0,ts[id][8]=false,tf[id][8]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="-550" y="-50">t&gt;=20</label>
+<nail x="-550" y="-50"/>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id8"/>
+<label kind="assignment">t=0,ts[id][4]=true,tf[id][4]=false,idle[id]=false,reward()</label>
+<label kind="guard">((tf[id][3])&amp;&amp;(position[id][9]))&amp;&amp;isNecessary(id,4)</label>
+</transition>
+<transition controllable="false">
+<source ref="id8"/>
+<target ref="id0"/>
+<label kind="assignment" x="-520" y="-20">t=0,ts[id][4]=false,tf[id][4]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="-550" y="-50">t&gt;=20</label>
+<nail x="-550" y="-50"/>
+</transition>
+<transition>
+<source ref="id0"/>
+<target ref="id9"/>
+<label kind="assignment">t=0,ts[id][7]=true,tf[id][7]=false,idle[id]=false,reward()</label>
+<label kind="guard">((tf[id][6])&amp;&amp;(position[id][10]))&amp;&amp;isNecessary(id,7)</label>
+</transition>
+<transition controllable="false">
+<source ref="id9"/>
+<target ref="id0"/>
+<label kind="assignment" x="-270" y="-20">t=0,ts[id][7]=false,tf[id][7]=true,
+updateIteration(),idle[id]=true</label>
+<label kind="guard" x="-300" y="-50">t&gt;=10</label>
+<nail x="-300" y="-50"/>
+</transition>
+</template>
+<system>movement0 = Movement0(0);
+taskExe0 = TaskExecution0(0);
+
+system movement0, taskExe0;</system>
+<queries>
+<query>
+<formula/>
+<comment>Task Coverage</comment>
+</query>
+<query>
+<formula>strategy opt = minE(globalTime + penalty)[&lt;=MAXTIME]{movement0.location, taskExe0.location, iteration[0], tf[0][0],tf[0][1],tf[0][2],tf[0][3],tf[0][4],tf[0][5],tf[0][6],tf[0][7],tf[0][8],tf[0][9]}-&gt;{}:&lt;&gt; ((forall(i:int[0,AgentNum-1]) iteration[i]&gt;=MaxIteration))</formula>
+<comment>Task Coverage</comment>
+</query><query>
+<formula>saveStrategy("output/path.out", opt)</formula>
+<comment>Task Coverage</comment>
+</query><query>
+<formula>A&lt;&gt; ((forall(i:int[0,AgentNum-1]) iteration[i]&gt;=MaxIteration)) under opt</formula>
+<comment>Task Coverage</comment>
+</query></queries>
+</nta>

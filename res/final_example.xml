@@ -1,0 +1,913 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?><nta>
+	<declaration>const int GOALRANGE = 1000;
+// NO - Number of 
+const int NOAGENTS = 2;
+const int NOMILESTONES = 7;
+const int NOTASKS = 5;
+const int NODEVICES = 4;
+const int NOEVENTS = 1;
+const int NOPRECONS = NOAGENTS * NOTASKS;
+
+typedef int[0,GOALRANGE] goalrange_t;
+typedef int[-1,NOAGENTS-1] agentid_t;  // agent id range
+typedef int[-1,NOMILESTONES-1] milestoneid_t; // milestone id range
+typedef int[-2,NOTASKS-1] taskid_t; // task id range
+typedef int[-1,NODEVICES-1] deviceid_t;
+typedef int[-1,NOEVENTS-1] eventid_t;
+typedef int[0,86400] time_t; // time is in seconds (24 hours is the maximum)
+typedef int[0,10] size_t;
+typedef int[0,3] logic_t;
+
+const time_t TOTALTIME = 10 * 60; // total time of the game: 10 minutes
+//const time_t OPTIMALTIME = 4 * 60; // optimal time of the game: 4 minutes
+const time_t OPTIMALTIME = 4 * 60 + 1; // optimal time of the game: 4 minutes 1 second
+
+typedef int[0,3] taskstatus_t;  // task status
+const taskstatus_t UNSTARTED = 0; // not started yet
+const taskstatus_t STARTED = 1; // started
+const taskstatus_t FINISHED  = 2; // finished
+const taskstatus_t WAITING  = 3; // waiting for being started
+
+typedef int[0,2] eventstatus_t;
+const eventstatus_t SLEEP = 0;
+const eventstatus_t ACTIVATED = 1;
+const eventstatus_t OVERDUE = 2;
+
+const logic_t LAND = 0;
+const logic_t LOR = 1;
+const logic_t LNOT = 2;
+const logic_t LNULL = 3;
+
+typedef struct {
+    agentid_t p_agent;
+    taskid_t p_task;
+    logic_t p_self_logic; //LNOT/LNULL
+    logic_t p_connection_logic; //LAND/LOR/LNULL
+    taskstatus_t p_target;
+} precondition_t;
+
+typedef struct {
+    agentid_t c_agent;
+    milestoneid_t c_position;
+} collaboration_t;
+
+typedef struct {
+    deviceid_t d_id;
+    milestoneid_t d_position;
+} device_t;
+
+typedef struct {
+    taskid_t t_id;
+    device_t t_deviceUse; // the device that is currently used by the task
+    device_t t_deviceReq[NODEVICES]; // the requirement of devices of this task
+} task_t;
+
+typedef struct {   
+    milestoneid_t a_position;
+    task_t a_task;
+    taskstatus_t a_status[NOTASKS];
+    eventstatus_t a_monitors[NOEVENTS];
+} agent_t;
+
+const milestoneid_t ONTHEWAY = -1;
+const milestoneid_t UNKOWNPOS = -1;
+const deviceid_t NULLDEVICE = -1;
+const device_t UNKOWNDEVICE = {NULLDEVICE, UNKOWNPOS};
+const taskid_t ID_IDLE = -1;
+const task_t TASK_IDLE = {ID_IDLE, UNKOWNDEVICE, { UNKOWNDEVICE, UNKOWNDEVICE, UNKOWNDEVICE, UNKOWNDEVICE }};
+const taskid_t ID_MOVING = -2;
+const task_t TASK_MOVING = {ID_MOVING, UNKOWNDEVICE, { UNKOWNDEVICE, UNKOWNDEVICE, UNKOWNDEVICE, UNKOWNDEVICE }};
+const precondition_t PRECON_TAUTOLOGY = {-1, -2, LNULL, LNULL, UNSTARTED};
+const collaboration_t COL_NULL = {-1, -1};
+
+broadcast chan exe[NOAGENTS], done[NOAGENTS];
+broadcast chan go[NOAGENTS];
+broadcast chan react[NOAGENTS][NOEVENTS];
+clock timeConsumption; // the total time consumption
+
+/**discrete variables in the templates*/
+goalrange_t missionGoal = 1;
+goalrange_t var = 0; // the variable that can be changed by tasks
+agent_t agents[NOAGENTS]; // the agents
+bool timeUp = false;
+
+/**judge if the mission goal is archieved*/
+bool isGameWon()
+{
+    return var &gt;= missionGoal &amp;&amp; !timeUp;
+}
+
+/**judge if a monitor of the agent is alert*/
+bool isEventOccur(const agentid_t agentID, const eventid_t eventID) {
+    return agents[agentID].a_monitors[eventID] == ACTIVATED;
+}
+
+bool isEventOverdue(const agentid_t agentID, const eventid_t eventID) {
+    return agents[agentID].a_monitors[eventID] == OVERDUE;
+}
+
+bool isMonitorAlert(const agentid_t agentID) {
+    /*size_t i;
+
+    for(i = 0; i &lt; NOEVENTS; i++) {
+        if(isEventOccur(agentID, i)) {
+            return true;
+        }
+    }*/
+
+    return false;
+}
+
+bool isMonitorStop(const agentid_t agentID) {
+    size_t i;
+
+    for(i = 0; i &lt; NOEVENTS; i++) {
+        if(isEventOverdue(agentID, i)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**functions for tasks*/
+bool isExecutable(const agentid_t agentID, const task_t task) {
+    bool ready = false;
+    size_t i;
+
+    if(timeUp || isGameWon() || isMonitorStop(agentID)) {
+        return false;
+    }
+    for(i = 0; i &lt; NODEVICES; i++) {
+        if(task.t_deviceReq[i] != UNKOWNDEVICE) {
+            // if the agent is at the position that contains a device belonging to the devide requirement of the task
+            ready = ready || (agents[agentID].a_position == task.t_deviceReq[i].d_position);
+        }
+    }
+    
+    return ready;
+}
+
+device_t getDevice(const agentid_t agentID, const task_t task) {
+    size_t i = 0;
+    device_t deviceWouldUse = UNKOWNDEVICE;
+
+    for(i = 0; i &lt; NODEVICES; i++) {
+        if((task.t_deviceReq[i].d_position != UNKOWNPOS) &amp;&amp; 
+           (task.t_deviceReq[i].d_position == agents[agentID].a_position)) {
+            deviceWouldUse = task.t_deviceReq[i];
+        }
+    }
+
+    return deviceWouldUse;
+}
+
+bool isBusy(const agentid_t agentID, const task_t task) {
+    size_t i = 0;
+    device_t deviceWouldUse = getDevice(agentID, task);
+
+    if(deviceWouldUse.d_id == NULLDEVICE) { // if I do not require any device, then the target task is always not busy
+        return false;
+    }
+
+    for(i = 0; i &lt; NOAGENTS; i++) {
+        if(i!=agentID) {
+            // if the agent is at the same position of another agent and their in-use device is the same
+            if((agents[agentID].a_position == agents[i].a_position) &amp;&amp; 
+               (deviceWouldUse == agents[i].a_task.t_deviceUse)) {
+                if(agents[i].a_status[task.t_id] == STARTED) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+void start(const agentid_t agentID, const task_t task) {
+    size_t i = 0;
+
+    agents[agentID].a_task = task;
+    agents[agentID].a_status[task.t_id] = STARTED;
+    agents[agentID].a_task.t_deviceUse = getDevice(agentID, task);
+}
+
+void finish(const agentid_t agentID, const task_t task, const goalrange_t speed, const bool last) {
+    size_t i = 0;
+
+    var += speed;
+
+    agents[agentID].a_task = TASK_IDLE;
+    agents[agentID].a_status[task.t_id] = FINISHED;
+    if(last) {
+        for(i = 0; i &lt; NOTASKS; i++) {
+            agents[agentID].a_status[i] = UNSTARTED;
+        }
+    }
+}
+
+void wait(const agentid_t agentID, const task_t task) {
+    agents[agentID].a_task = task;
+    agents[agentID].a_status[task.t_id] = WAITING;
+}
+
+bool isPreconMet(const precondition_t precon) {
+    bool result = false;
+
+    if(precon == PRECON_TAUTOLOGY) {
+        result = true;
+    }
+    else {
+        if(precon.p_self_logic == LNOT) {
+            result = agents[precon.p_agent].a_status[precon.p_task] != precon.p_target;
+        }
+        else {
+            result = agents[precon.p_agent].a_status[precon.p_task] == precon.p_target;
+        }
+    }
+
+    return result;
+}
+
+bool isReadyExe(const precondition_t precons[NOPRECONS]) {
+    bool result, clause;
+    logic_t op;
+    size_t i = 0;
+
+    result = isPreconMet(precons[0]);
+    
+    for(i = 1; i &lt; NOPRECONS - 1; i++) {
+        op = precons[i].p_connection_logic;
+        if(op != LNULL){
+            clause = isPreconMet(precons[i]);
+            if(op == LAND) {
+                result &amp;= clause;
+            }
+            else if(op == LOR) {
+                result |= clause;
+            }
+        }
+    }
+
+    return result;
+}
+
+bool isReadyCol(const agentid_t agentID, const collaboration_t collaborator) {
+    return agents[collaborator.c_agent].a_position == collaborator.c_position &amp;&amp;
+           agents[collaborator.c_agent].a_position == agents[agentID].a_position;
+}
+</declaration>
+	<template>
+		<name x="5" y="5">Movement</name>
+		<parameter>const agentid_t agentID, const milestoneid_t p1, const milestoneid_t p2, const time_t cost, const task_t taskOnP1, const task_t taskOnP2</parameter>
+		<declaration>clock xm;
+
+bool isReady(int position) {
+    if(timeUp || isGameWon() || isMonitorStop(agentID)) {
+        return false;
+    }
+    if(agents[agentID].a_position == position &amp;&amp; agents[agentID].a_task == TASK_IDLE) {
+        if((taskOnP1.t_id == ID_IDLE || agents[agentID].a_status[taskOnP1.t_id] == FINISHED) ||
+           (taskOnP2.t_id == ID_IDLE || agents[agentID].a_status[taskOnP2.t_id] == UNSTARTED)) { 
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void move() {
+    xm = 0;
+    agents[agentID].a_task = TASK_MOVING;
+    agents[agentID].a_position = ONTHEWAY;
+}
+
+void reach(int target) {
+    xm = 0;
+    agents[agentID].a_task = TASK_IDLE;
+    agents[agentID].a_position = target;
+}</declaration>
+		<location id="id0" x="136" y="-34">
+			<name x="144" y="-68">P2</name>
+		</location>
+		<location id="id1" x="-102" y="-34">
+			<name x="-119" y="-68">F1T2</name>
+			<label kind="invariant" x="-136" y="-17">xm&lt;=cost</label>
+		</location>
+		<location id="id2" x="-340" y="-34">
+			<name x="-365" y="-68">P1</name>
+			<label kind="exponentialrate" x="-350" y="0">100</label>
+		</location>
+		<init ref="id2"/>
+		<transition controllable="false">
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-17" y="34">go[agentID]?</label>
+			<nail x="136" y="59"/>
+			<nail x="-340" y="59"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-25" y="-110">xm&gt;=cost</label>
+			<label kind="synchronisation" x="-25" y="-84">go[agentID]!</label>
+			<label kind="assignment" x="-25" y="-59">reach(p2)</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-314" y="-85">isReady(p1)</label>
+			<label kind="assignment" x="-314" y="-59">move()</label>
+		</transition>
+	</template>
+	<template>
+		<name>TaskExecution</name>
+		<parameter>const agentid_t agentID, const time_t BCET, const time_t WCET, const task_t task, const precondition_t precons[NOPRECONS], const goalrange_t speed, const bool last</parameter>
+		<declaration>clock xe;</declaration>
+		<location id="id3" x="0" y="34">
+			<name x="17" y="17">Waiting</name>
+			<label kind="exponentialrate" x="17" y="42">100</label>
+		</location>
+		<location id="id4" x="-374" y="34">
+			<name x="-391" y="51">Idle</name>
+			<label kind="exponentialrate" x="-384" y="68">100</label>
+		</location>
+		<location id="id5" x="0" y="-204">
+			<name x="17" y="-212">Executing</name>
+			<label kind="invariant" x="9" y="-187">xe&lt;=WCET</label>
+		</location>
+		<init ref="id4"/>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-357" y="-331">!isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED &amp;&amp;
+!isMonitorAlert(agentID)</label>
+			<label kind="assignment" x="-357" y="-229">xe=0,start(agentID,task)</label>
+			<nail x="-374" y="-204"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id5"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-297" y="-110">xe&gt;=BCET</label>
+			<label kind="assignment" x="-297" y="-85">xe=0,finish(agentID,task,speed,last)</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="guard" x="8" y="-136">!isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED</label>
+			<label kind="assignment" x="8" y="-34">xe=0,start(agentID,task)</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-348" y="42">isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED &amp;&amp;
+!isMonitorAlert(agentID)</label>
+			<label kind="assignment" x="-348" y="144">xe=0,wait(agentID,task)</label>
+		</transition>
+	</template>
+	<template>
+		<name>TaskEvent</name>
+		<parameter>const agentid_t agentID, const eventid_t event, const time_t BCET, const time_t WCET, const task_t task</parameter>
+		<declaration>clock xe;</declaration>
+		<location id="id6" x="0" y="34">
+			<name x="17" y="17">Waiting</name>
+			<label kind="exponentialrate" x="17" y="42">100</label>
+		</location>
+		<location id="id7" x="-374" y="34">
+			<name x="-391" y="51">Idle</name>
+			<label kind="exponentialrate" x="-384" y="68">100</label>
+		</location>
+		<location id="id8" x="0" y="-204">
+			<name x="17" y="-212">Executing</name>
+			<label kind="invariant" x="9" y="-187">xe&lt;=WCET</label>
+		</location>
+		<init ref="id7"/>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-357" y="-297">!isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+isEventOccur(agentID, event)</label>
+			<label kind="assignment" x="-357" y="-229">xe=0,start(agentID,task)</label>
+			<nail x="-374" y="-204"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-297" y="-136">xe&gt;=BCET</label>
+			<label kind="synchronisation" x="-297" y="-110">react[agentID][event]!</label>
+			<label kind="assignment" x="-297" y="-85">xe=0,
+agents[agentID].a_task = TASK_IDLE</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id8"/>
+			<label kind="guard" x="8" y="-127">!isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+isEventOccur(agentID, event)</label>
+			<label kind="assignment" x="8" y="-59">xe=0,start(agentID,task)</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-348" y="42">isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+isEventOccur(agentID, event)</label>
+			<label kind="assignment" x="-348" y="110">xe=0,wait(agentID,task)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Monitor</name>
+		<parameter>agentid_t agentID, const eventid_t event, time_t warning, time_t shutdown</parameter>
+		<declaration>clock xo;</declaration>
+		<location id="id9" x="238" y="-34">
+			<name x="212" y="-68">Stop</name>
+		</location>
+		<location id="id10" x="34" y="-34">
+			<name x="-17" y="-59">Alert</name>
+			<label kind="invariant" x="-76" y="-25">xo&lt;=shutdown</label>
+		</location>
+		<location id="id11" x="-238" y="-34">
+			<name x="-229" y="-59">Run</name>
+			<label kind="invariant" x="-229" y="-25">xo&lt;=warning</label>
+		</location>
+		<init ref="id11"/>
+		<transition controllable="false">
+			<source ref="id10"/>
+			<target ref="id9"/>
+			<label kind="guard" x="76" y="-25">xo&gt;=shutdown</label>
+			<label kind="assignment" x="51" y="-8">agents[agentID].a_monitors[event]=OVERDUE</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-221" y="8">react[agentID][event]?</label>
+			<label kind="assignment" x="-221" y="25">xo=0,
+agents[agentID].a_monitors[event]=SLEEP</label>
+			<nail x="34" y="68"/>
+			<nail x="-238" y="68"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-221" y="-119">xo&gt;=warning</label>
+			<label kind="assignment" x="-221" y="-93">agents[agentID].a_monitors[event]=ACTIVATED</label>
+			<nail x="-238" y="-68"/>
+			<nail x="34" y="-68"/>
+		</transition>
+	</template>
+	<template>
+		<name>Referee</name>
+		<parameter>const agent_t initialData[NOAGENTS], const goalrange_t goal</parameter>
+		<declaration>clock xr;
+
+void initialize() {
+    size_t i = 0, j = 0;
+
+    missionGoal = goal;
+    for(i = 0; i &lt; NOAGENTS; i++) {
+        agents[i].a_position = initialData[i].a_position;
+        agents[i].a_task = initialData[i].a_task;
+        for(j = 0; j &lt; NOTASKS; j++) {
+            agents[i].a_status[j] = initialData[i].a_status[j];
+        }
+    }
+}</declaration>
+		<location id="id12" x="-255" y="17">
+			<name x="-265" y="-17">Win</name>
+			<committed/>
+		</location>
+		<location color="#a9a9a9" id="id13" x="59" y="-68">
+			<name x="42" y="-102">Lose</name>
+			<committed/>
+		</location>
+		<location color="#ff00ff" id="id14" x="-153" y="-68">
+			<name x="-161" y="-102">Bad</name>
+			<label kind="invariant" x="-272" y="-59">xr&lt;=TOTALTIME</label>
+		</location>
+		<location color="#00ff00" id="id15" x="-348" y="-68">
+			<name x="-373" y="-102">Good</name>
+			<label kind="invariant" x="-484" y="-59">xr&lt;=OPTIMALTIME</label>
+		</location>
+		<location id="id16" x="-552" y="-68">
+			<name x="-569" y="-102">Begin</name>
+			<committed/>
+		</location>
+		<init ref="id16"/>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-442" y="-17">isGameWon()</label>
+			<nail x="-348" y="17"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-144" y="-17">isGameWon()</label>
+			<nail x="-153" y="17"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id14"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-110" y="-119">xr&gt;=TOTALTIME &amp;&amp;
+!isGameWon()</label>
+			<label kind="assignment" x="-110" y="-59">timeUp=true</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id15"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-314" y="-119">xr&gt;=OPTIMALTIME &amp;&amp;
+!isGameWon()</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id16"/>
+			<target ref="id15"/>
+			<label kind="assignment" x="-509" y="-93">initialize()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Collaboration_I</name>
+		<parameter>const agentid_t agentID, const time_t BCET, const time_t WCET, const task_t task, const precondition_t precons[NOPRECONS], const collaboration_t cols[NOAGENTS-1], const goalrange_t speed, const bool last</parameter>
+		<declaration>clock xe;
+agentid_t helper = -1;</declaration>
+		<location id="id17" x="136" y="51">
+			<name x="119" y="68">Waiting</name>
+			<label kind="exponentialrate" x="126" y="85">100</label>
+		</location>
+		<location id="id18" x="-374" y="51">
+			<name x="-391" y="68">Idle</name>
+			<label kind="exponentialrate" x="-384" y="102">100</label>
+		</location>
+		<location id="id19" x="136" y="-204">
+			<name x="153" y="-212">Executing</name>
+			<label kind="invariant" x="145" y="-187">xe&lt;=WCET</label>
+		</location>
+		<init ref="id18"/>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id19"/>
+			<label kind="select" x="-357" y="-408">h:int[0,NOAGENTS-2]</label>
+			<label kind="guard" x="-357" y="-382">!isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED &amp;&amp;
+isReadyCol(agentID,cols[h]) &amp;&amp;
+!isMonitorAlert(agentID)</label>
+			<label kind="synchronisation" x="-357" y="-255">exe[cols[h].c_agent]!</label>
+			<label kind="assignment" x="-357" y="-229">xe=0,helper=cols[h].c_agent,start(agentID,task)</label>
+			<nail x="-374" y="-204"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id19"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-297" y="-127">xe&gt;=BCET</label>
+			<label kind="synchronisation" x="-297" y="-102">done[helper]!</label>
+			<label kind="assignment" x="-297" y="-76">xe=0,finish(agentID,task,speed,last)</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id19"/>
+			<label kind="guard" x="144" y="-136">!isBusy(agentID,task) &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED &amp;&amp;
+isReadyCol(agentID,cols[helper])</label>
+			<label kind="synchronisation" x="144" y="-51">exe[helper]!</label>
+			<label kind="assignment" x="144" y="-25">xe=0,start(agentID,task)</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id17"/>
+			<label kind="select" x="-331" y="59">h:int[0,NOAGENTS-2]</label>
+			<label kind="guard" x="-331" y="85">isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED &amp;&amp;
+isReadyCol(agentID,cols[h]) &amp;&amp;
+!isMonitorAlert(agentID)</label>
+			<label kind="assignment" x="-331" y="212">xe=0,helper=cols[h].c_agent,wait(agentID,task)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Collaboration_H</name>
+		<parameter>const agentid_t agentID, const task_t task, const precondition_t precons[NOPRECONS], const collaboration_t cols[NOAGENTS-1], const goalrange_t speed, const bool last</parameter>
+		<declaration>clock xe;
+agentid_t initiator = -1;</declaration>
+		<location id="id20" x="204" y="34">
+			<name x="187" y="51">Waiting</name>
+			<label kind="exponentialrate" x="194" y="68">100</label>
+		</location>
+		<location id="id21" x="-374" y="34">
+			<name x="-391" y="51">Idle</name>
+			<label kind="exponentialrate" x="-384" y="68">100</label>
+		</location>
+		<location id="id22" x="204" y="-204">
+			<name x="221" y="-212">Executing</name>
+		</location>
+		<init ref="id21"/>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="select" x="-357" y="-408">h:int[0,NOAGENTS-2]</label>
+			<label kind="guard" x="-357" y="-382">!isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+isReadyCol(agentID,cols[h]) &amp;&amp;
+!isMonitorAlert(agentID)</label>
+			<label kind="synchronisation" x="-357" y="-255">exe[agentID]?</label>
+			<label kind="assignment" x="-357" y="-229">xe=0,start(agentID,task)</label>
+			<nail x="-374" y="-204"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id22"/>
+			<target ref="id21"/>
+			<label kind="synchronisation" x="-297" y="-102">done[agentID]?</label>
+			<label kind="assignment" x="-297" y="-85">xe=0,finish(agentID,task,speed,last)</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id22"/>
+			<label kind="guard" x="212" y="-170">!isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+isReadyCol(agentID,cols[initiator])</label>
+			<label kind="synchronisation" x="212" y="-68">exe[agentID]?</label>
+			<label kind="assignment" x="212" y="-42">xe=0,start(agentID,task)</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id20"/>
+			<label kind="select" x="-348" y="42">h:int[0,NOAGENTS-2]</label>
+			<label kind="guard" x="-348" y="68">isBusy(agentID,task) &amp;&amp;
+isExecutable(agentID,task) &amp;&amp;
+agents[agentID].a_status[task.t_id] != FINISHED &amp;&amp;
+isReadyExe(precons) &amp;&amp;
+isReadyCol(agentID,cols[h]) &amp;&amp;
+!isMonitorAlert(agentID)</label>
+			<label kind="assignment" x="-348" y="195">xe=0,initiator=h,wait(agentID,task)</label>
+		</transition>
+	</template>
+	<system>/**ID of agents*/
+const agentid_t ID_AT12340 = 0;
+const agentid_t ID_AT12339 = 1;
+
+/**ID of devices*/
+const deviceid_t ID_CAMERA_360 = 0;
+const deviceid_t ID_CAMERA_PHOTO = 1;
+const deviceid_t ID_WIFI = 2;
+const deviceid_t ID_DUMP_BODY = 3;
+
+/**ID of milestones*/
+const milestoneid_t ID_TASK0_MILESTONE = 0;
+const milestoneid_t ID_TASK1_MILESTONE = 1;
+const milestoneid_t ID_TASK2_MILESTONE = 2;
+const milestoneid_t ID_TASK3_MILESTONE = 3;
+const milestoneid_t ID_TASK4_MILESTONE = 4;
+const milestoneid_t ID_AgentAT12340_LOCATION = 5;
+const milestoneid_t ID_AgentAT12339_LOCATION = 6;
+
+/**ID of tasks*/
+const taskid_t ID_TASK0_CAMERA_360_AT12340 = 0;
+const taskid_t ID_TASK1_CAMERA_PHOTO_AT12340 = 1;
+const taskid_t ID_TASK2_CAMERA_PHOTO_AT12340 = 2;
+const taskid_t ID_TASK3_WIFI_AT12340 = 3;
+const taskid_t ID_TASK4_DUMP_BODY_AT12340 = 4;
+const taskid_t ID_TASK0_CAMERA_360_AT12339 = 0;
+const taskid_t ID_TASK1_CAMERA_PHOTO_AT12339 = 1;
+const taskid_t ID_TASK2_CAMERA_PHOTO_AT12339 = 2;
+const taskid_t ID_TASK3_WIFI_AT12339 = 3;
+const taskid_t ID_TASK4_DUMP_BODY_AT12339 = 4;
+
+/**ID of events*/
+
+/**devices*/
+const device_t DV_CAMERA_360_LOC0 = {ID_CAMERA_360, ID_TASK0_MILESTONE};
+const device_t DV_CAMERA_PHOTO_LOC0 = {ID_CAMERA_PHOTO, ID_TASK1_MILESTONE};
+const device_t DV_CAMERA_PHOTO_LOC1 = {ID_CAMERA_PHOTO, ID_TASK2_MILESTONE};
+const device_t DV_WIFI_LOC0 = {ID_WIFI, ID_TASK3_MILESTONE};
+const device_t DV_DUMP_BODY_LOC0 = {ID_DUMP_BODY, ID_TASK4_MILESTONE};
+
+/**tasks and their milestones*/
+const task_t TASK0_CAMERA_360_AT12339 = {ID_TASK0_CAMERA_360_AT12339, UNKOWNDEVICE, {DV_CAMERA_360_LOC0,UNKOWNDEVICE,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK1_CAMERA_PHOTO_AT12340 = {ID_TASK1_CAMERA_PHOTO_AT12340, UNKOWNDEVICE, {DV_CAMERA_PHOTO_LOC0,DV_CAMERA_PHOTO_LOC1,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK0_CAMERA_360_AT12340 = {ID_TASK0_CAMERA_360_AT12340, UNKOWNDEVICE, {DV_CAMERA_360_LOC0,UNKOWNDEVICE,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK2_CAMERA_PHOTO_AT12340 = {ID_TASK2_CAMERA_PHOTO_AT12340, UNKOWNDEVICE, {DV_CAMERA_PHOTO_LOC0,DV_CAMERA_PHOTO_LOC1,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK4_DUMP_BODY_AT12339 = {ID_TASK4_DUMP_BODY_AT12339, UNKOWNDEVICE, {DV_DUMP_BODY_LOC0,UNKOWNDEVICE,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK2_CAMERA_PHOTO_AT12339 = {ID_TASK2_CAMERA_PHOTO_AT12339, UNKOWNDEVICE, {DV_CAMERA_PHOTO_LOC0,DV_CAMERA_PHOTO_LOC1,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK3_WIFI_AT12339 = {ID_TASK3_WIFI_AT12339, UNKOWNDEVICE, {DV_WIFI_LOC0,UNKOWNDEVICE,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK3_WIFI_AT12340 = {ID_TASK3_WIFI_AT12340, UNKOWNDEVICE, {DV_WIFI_LOC0,UNKOWNDEVICE,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK4_DUMP_BODY_AT12340 = {ID_TASK4_DUMP_BODY_AT12340, UNKOWNDEVICE, {DV_DUMP_BODY_LOC0,UNKOWNDEVICE,UNKOWNDEVICE,UNKOWNDEVICE}};
+const task_t TASK1_CAMERA_PHOTO_AT12339 = {ID_TASK1_CAMERA_PHOTO_AT12339, UNKOWNDEVICE, {DV_CAMERA_PHOTO_LOC0,DV_CAMERA_PHOTO_LOC1,UNKOWNDEVICE,UNKOWNDEVICE}};
+
+/**preconditions of tasks*/
+const precondition_t PRE_ToTaskId0_ID_AT12340[NOPRECONS] = {{ID_AT12340, ID_TASK1_CAMERA_PHOTO_AT12340, LNULL, LNULL, STARTED},PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId0_ID_AT12339[NOPRECONS] = {{ID_AT12339, ID_TASK1_CAMERA_PHOTO_AT12339, LNULL, LNULL, STARTED},PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId1_ID_AT12340[NOPRECONS] = {{ID_AT12340, ID_TASK2_CAMERA_PHOTO_AT12340, LNULL, LAND, FINISHED}, {ID_AT12340, ID_TASK3_WIFI_AT12340, LNULL, LNULL, FINISHED},PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId1_ID_AT12339[NOPRECONS] = {{ID_AT12339, ID_TASK2_CAMERA_PHOTO_AT12339, LNULL, LAND, FINISHED}, {ID_AT12339, ID_TASK3_WIFI_AT12339, LNULL, LNULL, FINISHED},PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId2_ID_AT12340[NOPRECONS] = {{ID_AT12340, ID_TASK2_CAMERA_PHOTO_AT12340, LNULL, LAND, FINISHED}, {ID_AT12340, ID_TASK3_WIFI_AT12340, LNULL, LNULL, FINISHED},PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId2_ID_AT12339[NOPRECONS] = {{ID_AT12339, ID_TASK2_CAMERA_PHOTO_AT12339, LNULL, LAND, FINISHED}, {ID_AT12339, ID_TASK3_WIFI_AT12339, LNULL, LNULL, FINISHED},PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId3_ID_AT12340[NOPRECONS] = {PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId3_ID_AT12339[NOPRECONS] = {PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY,PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId4_ID_AT12340[NOPRECONS] = {{ID_AT12340, ID_TASK1_CAMERA_PHOTO_AT12340, LNULL, LNULL, FINISHED},PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY};
+const precondition_t PRE_ToTaskId4_ID_AT12339[NOPRECONS] = {{ID_AT12339, ID_TASK1_CAMERA_PHOTO_AT12339, LNULL, LNULL, FINISHED},PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY, PRECON_TAUTOLOGY};
+
+/**collaboration between agents*/ /*if NOAGENTS - 1 sup to 1, fill the unused elements with COL_NULL*/
+
+/**parameters of the mission*/
+const goalrange_t GOAL = 1000;
+
+/**initial information of agents*/
+const agent_t INIT_AT12340 = {ID_AgentAT12340_LOCATION, TASK_IDLE, { UNSTARTED, UNSTARTED, UNSTARTED, UNSTARTED, UNSTARTED}, {SLEEP}};
+const agent_t INIT_AT12339 = {ID_AgentAT12339_LOCATION, TASK_IDLE, { UNSTARTED, UNSTARTED, UNSTARTED, UNSTARTED, UNSTARTED}, {SLEEP}};
+const agent_t INIT_AGENTS[NOAGENTS] = {INIT_AT12340, INIT_AT12339};
+
+/** Agents */
+Rong = Referee(INIT_AGENTS, GOAL);
+
+/** Movement */
+//ID_AT12340
+m_movement0_TASK0_TASK3_AT12340 = Movement(ID_AT12340,ID_TASK0_MILESTONE,ID_TASK3_MILESTONE,127,TASK0_CAMERA_360_AT12340,TASK3_WIFI_AT12340);
+m_movement0_TASK3_TASK0_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_TASK0_MILESTONE,127,TASK3_WIFI_AT12340,TASK0_CAMERA_360_AT12340);
+m_movement0_TASK0_TASK1_AT12340 = Movement(ID_AT12340,ID_TASK0_MILESTONE,ID_TASK1_MILESTONE,73,TASK0_CAMERA_360_AT12340,TASK1_CAMERA_PHOTO_AT12340);
+m_movement0_TASK1_TASK0_AT12340 = Movement(ID_AT12340,ID_TASK1_MILESTONE,ID_TASK0_MILESTONE,73,TASK1_CAMERA_PHOTO_AT12340,TASK0_CAMERA_360_AT12340);
+m_movement0_TASK0_TASK4_AT12340 = Movement(ID_AT12340,ID_TASK0_MILESTONE,ID_TASK4_MILESTONE,128,TASK0_CAMERA_360_AT12340,TASK4_DUMP_BODY_AT12340);
+m_movement0_TASK4_TASK0_AT12340 = Movement(ID_AT12340,ID_TASK4_MILESTONE,ID_TASK0_MILESTONE,128,TASK4_DUMP_BODY_AT12340,TASK0_CAMERA_360_AT12340);
+m_movement0_TASK0_TASK2_AT12340 = Movement(ID_AT12340,ID_TASK0_MILESTONE,ID_TASK2_MILESTONE,51,TASK0_CAMERA_360_AT12340,TASK2_CAMERA_PHOTO_AT12340);
+m_movement0_TASK2_TASK0_AT12340 = Movement(ID_AT12340,ID_TASK2_MILESTONE,ID_TASK0_MILESTONE,51,TASK2_CAMERA_PHOTO_AT12340,TASK0_CAMERA_360_AT12340);
+m_movement1_TASK3_IDLE_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_AgentAT12340_LOCATION,124,TASK3_WIFI_AT12340, TASK_IDLE);
+m_movement1_IDLE_AT12340_TASK3 = Movement(ID_AT12340,ID_AgentAT12340_LOCATION,ID_TASK3_MILESTONE,124, TASK_IDLE,TASK3_WIFI_AT12340);
+m_movement1_TASK3_TASK0_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_TASK0_MILESTONE,127,TASK3_WIFI_AT12340,TASK0_CAMERA_360_AT12340);
+m_movement1_TASK0_TASK3_AT12340 = Movement(ID_AT12340,ID_TASK0_MILESTONE,ID_TASK3_MILESTONE,127,TASK0_CAMERA_360_AT12340,TASK3_WIFI_AT12340);
+m_movement1_TASK3_TASK1_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_TASK1_MILESTONE,170,TASK3_WIFI_AT12340,TASK1_CAMERA_PHOTO_AT12340);
+m_movement1_TASK1_TASK3_AT12340 = Movement(ID_AT12340,ID_TASK1_MILESTONE,ID_TASK3_MILESTONE,170,TASK1_CAMERA_PHOTO_AT12340,TASK3_WIFI_AT12340);
+m_movement1_TASK3_TASK4_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_TASK4_MILESTONE,78,TASK3_WIFI_AT12340,TASK4_DUMP_BODY_AT12340);
+m_movement1_TASK4_TASK3_AT12340 = Movement(ID_AT12340,ID_TASK4_MILESTONE,ID_TASK3_MILESTONE,78,TASK4_DUMP_BODY_AT12340,TASK3_WIFI_AT12340);
+m_movement1_TASK3_TASK2_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_TASK2_MILESTONE,75,TASK3_WIFI_AT12340,TASK2_CAMERA_PHOTO_AT12340);
+m_movement1_TASK2_TASK3_AT12340 = Movement(ID_AT12340,ID_TASK2_MILESTONE,ID_TASK3_MILESTONE,75,TASK2_CAMERA_PHOTO_AT12340,TASK3_WIFI_AT12340);
+m_movement2_TASK1_TASK0_AT12340 = Movement(ID_AT12340,ID_TASK1_MILESTONE,ID_TASK0_MILESTONE,73,TASK1_CAMERA_PHOTO_AT12340,TASK0_CAMERA_360_AT12340);
+m_movement2_TASK0_TASK1_AT12340 = Movement(ID_AT12340,ID_TASK0_MILESTONE,ID_TASK1_MILESTONE,73,TASK0_CAMERA_360_AT12340,TASK1_CAMERA_PHOTO_AT12340);
+m_movement2_TASK1_TASK3_AT12340 = Movement(ID_AT12340,ID_TASK1_MILESTONE,ID_TASK3_MILESTONE,170,TASK1_CAMERA_PHOTO_AT12340,TASK3_WIFI_AT12340);
+m_movement2_TASK3_TASK1_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_TASK1_MILESTONE,170,TASK3_WIFI_AT12340,TASK1_CAMERA_PHOTO_AT12340);
+m_movement2_TASK1_TASK4_AT12340 = Movement(ID_AT12340,ID_TASK1_MILESTONE,ID_TASK4_MILESTONE,200,TASK1_CAMERA_PHOTO_AT12340,TASK4_DUMP_BODY_AT12340);
+m_movement2_TASK4_TASK1_AT12340 = Movement(ID_AT12340,ID_TASK4_MILESTONE,ID_TASK1_MILESTONE,200,TASK4_DUMP_BODY_AT12340,TASK1_CAMERA_PHOTO_AT12340);
+m_movement2_TASK1_TASK2_AT12340 = Movement(ID_AT12340,ID_TASK1_MILESTONE,ID_TASK2_MILESTONE,94,TASK1_CAMERA_PHOTO_AT12340,TASK2_CAMERA_PHOTO_AT12340);
+m_movement2_TASK2_TASK1_AT12340 = Movement(ID_AT12340,ID_TASK2_MILESTONE,ID_TASK1_MILESTONE,94,TASK2_CAMERA_PHOTO_AT12340,TASK1_CAMERA_PHOTO_AT12340);
+m_movement3_TASK4_TASK0_AT12340 = Movement(ID_AT12340,ID_TASK4_MILESTONE,ID_TASK0_MILESTONE,128,TASK4_DUMP_BODY_AT12340,TASK0_CAMERA_360_AT12340);
+m_movement3_TASK0_TASK4_AT12340 = Movement(ID_AT12340,ID_TASK0_MILESTONE,ID_TASK4_MILESTONE,128,TASK0_CAMERA_360_AT12340,TASK4_DUMP_BODY_AT12340);
+m_movement3_TASK4_TASK3_AT12340 = Movement(ID_AT12340,ID_TASK4_MILESTONE,ID_TASK3_MILESTONE,78,TASK4_DUMP_BODY_AT12340,TASK3_WIFI_AT12340);
+m_movement3_TASK3_TASK4_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_TASK4_MILESTONE,78,TASK3_WIFI_AT12340,TASK4_DUMP_BODY_AT12340);
+m_movement3_TASK4_TASK1_AT12340 = Movement(ID_AT12340,ID_TASK4_MILESTONE,ID_TASK1_MILESTONE,200,TASK4_DUMP_BODY_AT12340,TASK1_CAMERA_PHOTO_AT12340);
+m_movement3_TASK1_TASK4_AT12340 = Movement(ID_AT12340,ID_TASK1_MILESTONE,ID_TASK4_MILESTONE,200,TASK1_CAMERA_PHOTO_AT12340,TASK4_DUMP_BODY_AT12340);
+m_movement3_TASK4_TASK2_AT12340 = Movement(ID_AT12340,ID_TASK4_MILESTONE,ID_TASK2_MILESTONE,154,TASK4_DUMP_BODY_AT12340,TASK2_CAMERA_PHOTO_AT12340);
+m_movement3_TASK2_TASK4_AT12340 = Movement(ID_AT12340,ID_TASK2_MILESTONE,ID_TASK4_MILESTONE,154,TASK2_CAMERA_PHOTO_AT12340,TASK4_DUMP_BODY_AT12340);
+m_movement4_TASK2_TASK0_AT12340 = Movement(ID_AT12340,ID_TASK2_MILESTONE,ID_TASK0_MILESTONE,51,TASK2_CAMERA_PHOTO_AT12340,TASK0_CAMERA_360_AT12340);
+m_movement4_TASK0_TASK2_AT12340 = Movement(ID_AT12340,ID_TASK0_MILESTONE,ID_TASK2_MILESTONE,51,TASK0_CAMERA_360_AT12340,TASK2_CAMERA_PHOTO_AT12340);
+m_movement4_TASK2_TASK3_AT12340 = Movement(ID_AT12340,ID_TASK2_MILESTONE,ID_TASK3_MILESTONE,75,TASK2_CAMERA_PHOTO_AT12340,TASK3_WIFI_AT12340);
+m_movement4_TASK3_TASK2_AT12340 = Movement(ID_AT12340,ID_TASK3_MILESTONE,ID_TASK2_MILESTONE,75,TASK3_WIFI_AT12340,TASK2_CAMERA_PHOTO_AT12340);
+m_movement4_TASK2_TASK1_AT12340 = Movement(ID_AT12340,ID_TASK2_MILESTONE,ID_TASK1_MILESTONE,94,TASK2_CAMERA_PHOTO_AT12340,TASK1_CAMERA_PHOTO_AT12340);
+m_movement4_TASK1_TASK2_AT12340 = Movement(ID_AT12340,ID_TASK1_MILESTONE,ID_TASK2_MILESTONE,94,TASK1_CAMERA_PHOTO_AT12340,TASK2_CAMERA_PHOTO_AT12340);
+m_movement4_TASK2_TASK4_AT12340 = Movement(ID_AT12340,ID_TASK2_MILESTONE,ID_TASK4_MILESTONE,154,TASK2_CAMERA_PHOTO_AT12340,TASK4_DUMP_BODY_AT12340);
+m_movement4_TASK4_TASK2_AT12340 = Movement(ID_AT12340,ID_TASK4_MILESTONE,ID_TASK2_MILESTONE,154,TASK4_DUMP_BODY_AT12340,TASK2_CAMERA_PHOTO_AT12340);
+
+//ID_AT12339
+m_movement5_TASK0_TASK3_AT12339 = Movement(ID_AT12339,ID_TASK0_MILESTONE,ID_TASK3_MILESTONE,127,TASK0_CAMERA_360_AT12339,TASK3_WIFI_AT12339);
+m_movement5_TASK3_TASK0_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_TASK0_MILESTONE,127,TASK3_WIFI_AT12339,TASK0_CAMERA_360_AT12339);
+m_movement5_TASK0_TASK1_AT12339 = Movement(ID_AT12339,ID_TASK0_MILESTONE,ID_TASK1_MILESTONE,73,TASK0_CAMERA_360_AT12339,TASK1_CAMERA_PHOTO_AT12339);
+m_movement5_TASK1_TASK0_AT12339 = Movement(ID_AT12339,ID_TASK1_MILESTONE,ID_TASK0_MILESTONE,73,TASK1_CAMERA_PHOTO_AT12339,TASK0_CAMERA_360_AT12339);
+m_movement5_TASK0_TASK4_AT12339 = Movement(ID_AT12339,ID_TASK0_MILESTONE,ID_TASK4_MILESTONE,128,TASK0_CAMERA_360_AT12339,TASK4_DUMP_BODY_AT12339);
+m_movement5_TASK4_TASK0_AT12339 = Movement(ID_AT12339,ID_TASK4_MILESTONE,ID_TASK0_MILESTONE,128,TASK4_DUMP_BODY_AT12339,TASK0_CAMERA_360_AT12339);
+m_movement5_TASK0_TASK2_AT12339 = Movement(ID_AT12339,ID_TASK0_MILESTONE,ID_TASK2_MILESTONE,51,TASK0_CAMERA_360_AT12339,TASK2_CAMERA_PHOTO_AT12339);
+m_movement5_TASK2_TASK0_AT12339 = Movement(ID_AT12339,ID_TASK2_MILESTONE,ID_TASK0_MILESTONE,51,TASK2_CAMERA_PHOTO_AT12339,TASK0_CAMERA_360_AT12339);
+m_movement6_TASK3_IDLE_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_AgentAT12339_LOCATION,80,TASK3_WIFI_AT12339, TASK_IDLE);
+m_movement6_IDLE_AT12339_TASK3 = Movement(ID_AT12339,ID_AgentAT12339_LOCATION,ID_TASK3_MILESTONE,80, TASK_IDLE,TASK3_WIFI_AT12339);
+m_movement6_TASK3_TASK0_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_TASK0_MILESTONE,127,TASK3_WIFI_AT12339,TASK0_CAMERA_360_AT12339);
+m_movement6_TASK0_TASK3_AT12339 = Movement(ID_AT12339,ID_TASK0_MILESTONE,ID_TASK3_MILESTONE,127,TASK0_CAMERA_360_AT12339,TASK3_WIFI_AT12339);
+m_movement6_TASK3_TASK1_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_TASK1_MILESTONE,170,TASK3_WIFI_AT12339,TASK1_CAMERA_PHOTO_AT12339);
+m_movement6_TASK1_TASK3_AT12339 = Movement(ID_AT12339,ID_TASK1_MILESTONE,ID_TASK3_MILESTONE,170,TASK1_CAMERA_PHOTO_AT12339,TASK3_WIFI_AT12339);
+m_movement6_TASK3_TASK4_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_TASK4_MILESTONE,78,TASK3_WIFI_AT12339,TASK4_DUMP_BODY_AT12339);
+m_movement6_TASK4_TASK3_AT12339 = Movement(ID_AT12339,ID_TASK4_MILESTONE,ID_TASK3_MILESTONE,78,TASK4_DUMP_BODY_AT12339,TASK3_WIFI_AT12339);
+m_movement6_TASK3_TASK2_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_TASK2_MILESTONE,75,TASK3_WIFI_AT12339,TASK2_CAMERA_PHOTO_AT12339);
+m_movement6_TASK2_TASK3_AT12339 = Movement(ID_AT12339,ID_TASK2_MILESTONE,ID_TASK3_MILESTONE,75,TASK2_CAMERA_PHOTO_AT12339,TASK3_WIFI_AT12339);
+m_movement7_TASK1_TASK0_AT12339 = Movement(ID_AT12339,ID_TASK1_MILESTONE,ID_TASK0_MILESTONE,73,TASK1_CAMERA_PHOTO_AT12339,TASK0_CAMERA_360_AT12339);
+m_movement7_TASK0_TASK1_AT12339 = Movement(ID_AT12339,ID_TASK0_MILESTONE,ID_TASK1_MILESTONE,73,TASK0_CAMERA_360_AT12339,TASK1_CAMERA_PHOTO_AT12339);
+m_movement7_TASK1_TASK3_AT12339 = Movement(ID_AT12339,ID_TASK1_MILESTONE,ID_TASK3_MILESTONE,170,TASK1_CAMERA_PHOTO_AT12339,TASK3_WIFI_AT12339);
+m_movement7_TASK3_TASK1_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_TASK1_MILESTONE,170,TASK3_WIFI_AT12339,TASK1_CAMERA_PHOTO_AT12339);
+m_movement7_TASK1_TASK4_AT12339 = Movement(ID_AT12339,ID_TASK1_MILESTONE,ID_TASK4_MILESTONE,200,TASK1_CAMERA_PHOTO_AT12339,TASK4_DUMP_BODY_AT12339);
+m_movement7_TASK4_TASK1_AT12339 = Movement(ID_AT12339,ID_TASK4_MILESTONE,ID_TASK1_MILESTONE,200,TASK4_DUMP_BODY_AT12339,TASK1_CAMERA_PHOTO_AT12339);
+m_movement7_TASK1_TASK2_AT12339 = Movement(ID_AT12339,ID_TASK1_MILESTONE,ID_TASK2_MILESTONE,94,TASK1_CAMERA_PHOTO_AT12339,TASK2_CAMERA_PHOTO_AT12339);
+m_movement7_TASK2_TASK1_AT12339 = Movement(ID_AT12339,ID_TASK2_MILESTONE,ID_TASK1_MILESTONE,94,TASK2_CAMERA_PHOTO_AT12339,TASK1_CAMERA_PHOTO_AT12339);
+m_movement8_TASK4_TASK0_AT12339 = Movement(ID_AT12339,ID_TASK4_MILESTONE,ID_TASK0_MILESTONE,128,TASK4_DUMP_BODY_AT12339,TASK0_CAMERA_360_AT12339);
+m_movement8_TASK0_TASK4_AT12339 = Movement(ID_AT12339,ID_TASK0_MILESTONE,ID_TASK4_MILESTONE,128,TASK0_CAMERA_360_AT12339,TASK4_DUMP_BODY_AT12339);
+m_movement8_TASK4_TASK3_AT12339 = Movement(ID_AT12339,ID_TASK4_MILESTONE,ID_TASK3_MILESTONE,78,TASK4_DUMP_BODY_AT12339,TASK3_WIFI_AT12339);
+m_movement8_TASK3_TASK4_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_TASK4_MILESTONE,78,TASK3_WIFI_AT12339,TASK4_DUMP_BODY_AT12339);
+m_movement8_TASK4_TASK1_AT12339 = Movement(ID_AT12339,ID_TASK4_MILESTONE,ID_TASK1_MILESTONE,200,TASK4_DUMP_BODY_AT12339,TASK1_CAMERA_PHOTO_AT12339);
+m_movement8_TASK1_TASK4_AT12339 = Movement(ID_AT12339,ID_TASK1_MILESTONE,ID_TASK4_MILESTONE,200,TASK1_CAMERA_PHOTO_AT12339,TASK4_DUMP_BODY_AT12339);
+m_movement8_TASK4_TASK2_AT12339 = Movement(ID_AT12339,ID_TASK4_MILESTONE,ID_TASK2_MILESTONE,154,TASK4_DUMP_BODY_AT12339,TASK2_CAMERA_PHOTO_AT12339);
+m_movement8_TASK2_TASK4_AT12339 = Movement(ID_AT12339,ID_TASK2_MILESTONE,ID_TASK4_MILESTONE,154,TASK2_CAMERA_PHOTO_AT12339,TASK4_DUMP_BODY_AT12339);
+m_movement9_TASK2_TASK0_AT12339 = Movement(ID_AT12339,ID_TASK2_MILESTONE,ID_TASK0_MILESTONE,51,TASK2_CAMERA_PHOTO_AT12339,TASK0_CAMERA_360_AT12339);
+m_movement9_TASK0_TASK2_AT12339 = Movement(ID_AT12339,ID_TASK0_MILESTONE,ID_TASK2_MILESTONE,51,TASK0_CAMERA_360_AT12339,TASK2_CAMERA_PHOTO_AT12339);
+m_movement9_TASK2_TASK3_AT12339 = Movement(ID_AT12339,ID_TASK2_MILESTONE,ID_TASK3_MILESTONE,75,TASK2_CAMERA_PHOTO_AT12339,TASK3_WIFI_AT12339);
+m_movement9_TASK3_TASK2_AT12339 = Movement(ID_AT12339,ID_TASK3_MILESTONE,ID_TASK2_MILESTONE,75,TASK3_WIFI_AT12339,TASK2_CAMERA_PHOTO_AT12339);
+m_movement9_TASK2_TASK1_AT12339 = Movement(ID_AT12339,ID_TASK2_MILESTONE,ID_TASK1_MILESTONE,94,TASK2_CAMERA_PHOTO_AT12339,TASK1_CAMERA_PHOTO_AT12339);
+m_movement9_TASK1_TASK2_AT12339 = Movement(ID_AT12339,ID_TASK1_MILESTONE,ID_TASK2_MILESTONE,94,TASK1_CAMERA_PHOTO_AT12339,TASK2_CAMERA_PHOTO_AT12339);
+m_movement9_TASK2_TASK4_AT12339 = Movement(ID_AT12339,ID_TASK2_MILESTONE,ID_TASK4_MILESTONE,154,TASK2_CAMERA_PHOTO_AT12339,TASK4_DUMP_BODY_AT12339);
+m_movement9_TASK4_TASK2_AT12339 = Movement(ID_AT12339,ID_TASK4_MILESTONE,ID_TASK2_MILESTONE,154,TASK4_DUMP_BODY_AT12339,TASK2_CAMERA_PHOTO_AT12339);
+
+/** Tasks */
+t_TaskExecutionTASK0_AT12340 = TaskExecution(ID_AT12340,110,115,TASK0_CAMERA_360_AT12340, PRE_ToTaskId0_ID_AT12339, 0, false);
+t_TaskExecutionTASK0_AT12339 = TaskExecution(ID_AT12339,110,115,TASK0_CAMERA_360_AT12339, PRE_ToTaskId0_ID_AT12339, 0, false);
+t_TaskExecutionTASK1_AT12340 = TaskExecution(ID_AT12340,120,130,TASK1_CAMERA_PHOTO_AT12340, PRE_ToTaskId1_ID_AT12339, 0, false);
+t_TaskExecutionTASK1_AT12339 = TaskExecution(ID_AT12339,120,130,TASK1_CAMERA_PHOTO_AT12339, PRE_ToTaskId1_ID_AT12339, 0, false);
+t_TaskExecutionTASK2_AT12340 = TaskExecution(ID_AT12340,120,130,TASK2_CAMERA_PHOTO_AT12340, PRE_ToTaskId2_ID_AT12339, 0, false);
+t_TaskExecutionTASK2_AT12339 = TaskExecution(ID_AT12339,120,130,TASK2_CAMERA_PHOTO_AT12339, PRE_ToTaskId2_ID_AT12339, 0, false);
+t_TaskExecutionTASK3_AT12340 = TaskExecution(ID_AT12340,100,120,TASK3_WIFI_AT12340, PRE_ToTaskId3_ID_AT12339, 0, false);
+t_TaskExecutionTASK3_AT12339 = TaskExecution(ID_AT12339,100,120,TASK3_WIFI_AT12339, PRE_ToTaskId3_ID_AT12339, 0, false);
+t_TaskExecutionTASK4_AT12340 = TaskExecution(ID_AT12340,90,100,TASK4_DUMP_BODY_AT12340, PRE_ToTaskId4_ID_AT12339, 0, false);
+t_TaskExecutionTASK4_AT12339 = TaskExecution(ID_AT12339,90,100,TASK4_DUMP_BODY_AT12339, PRE_ToTaskId4_ID_AT12339, 0, false);
+
+system Rong,
+/**map*/
+m_movement0_TASK0_TASK3_AT12340,m_movement0_TASK3_TASK0_AT12340,
+m_movement0_TASK0_TASK1_AT12340,m_movement0_TASK1_TASK0_AT12340,
+m_movement0_TASK0_TASK4_AT12340,m_movement0_TASK4_TASK0_AT12340,
+m_movement0_TASK0_TASK2_AT12340,m_movement0_TASK2_TASK0_AT12340,
+m_movement1_TASK3_IDLE_AT12340,m_movement1_IDLE_AT12340_TASK3,
+m_movement1_TASK3_TASK0_AT12340,m_movement1_TASK0_TASK3_AT12340,
+m_movement1_TASK3_TASK1_AT12340,m_movement1_TASK1_TASK3_AT12340,
+m_movement1_TASK3_TASK4_AT12340,m_movement1_TASK4_TASK3_AT12340,
+m_movement1_TASK3_TASK2_AT12340,m_movement1_TASK2_TASK3_AT12340,
+m_movement2_TASK1_TASK0_AT12340,m_movement2_TASK0_TASK1_AT12340,
+m_movement2_TASK1_TASK3_AT12340,m_movement2_TASK3_TASK1_AT12340,
+m_movement2_TASK1_TASK4_AT12340,m_movement2_TASK4_TASK1_AT12340,
+m_movement2_TASK1_TASK2_AT12340,m_movement2_TASK2_TASK1_AT12340,
+m_movement3_TASK4_TASK0_AT12340,m_movement3_TASK0_TASK4_AT12340,
+m_movement3_TASK4_TASK3_AT12340,m_movement3_TASK3_TASK4_AT12340,
+m_movement3_TASK4_TASK1_AT12340,m_movement3_TASK1_TASK4_AT12340,
+m_movement3_TASK4_TASK2_AT12340,m_movement3_TASK2_TASK4_AT12340,
+m_movement4_TASK2_TASK0_AT12340,m_movement4_TASK0_TASK2_AT12340,
+m_movement4_TASK2_TASK3_AT12340,m_movement4_TASK3_TASK2_AT12340,
+m_movement4_TASK2_TASK1_AT12340,m_movement4_TASK1_TASK2_AT12340,
+m_movement4_TASK2_TASK4_AT12340,m_movement4_TASK4_TASK2_AT12340,
+m_movement5_TASK0_TASK3_AT12339,m_movement5_TASK3_TASK0_AT12339,
+m_movement5_TASK0_TASK1_AT12339,m_movement5_TASK1_TASK0_AT12339,
+m_movement5_TASK0_TASK4_AT12339,m_movement5_TASK4_TASK0_AT12339,
+m_movement5_TASK0_TASK2_AT12339,m_movement5_TASK2_TASK0_AT12339,
+m_movement6_TASK3_IDLE_AT12339,m_movement6_IDLE_AT12339_TASK3,
+m_movement6_TASK3_TASK0_AT12339,m_movement6_TASK0_TASK3_AT12339,
+m_movement6_TASK3_TASK1_AT12339,m_movement6_TASK1_TASK3_AT12339,
+m_movement6_TASK3_TASK4_AT12339,m_movement6_TASK4_TASK3_AT12339,
+m_movement6_TASK3_TASK2_AT12339,m_movement6_TASK2_TASK3_AT12339,
+m_movement7_TASK1_TASK0_AT12339,m_movement7_TASK0_TASK1_AT12339,
+m_movement7_TASK1_TASK3_AT12339,m_movement7_TASK3_TASK1_AT12339,
+m_movement7_TASK1_TASK4_AT12339,m_movement7_TASK4_TASK1_AT12339,
+m_movement7_TASK1_TASK2_AT12339,m_movement7_TASK2_TASK1_AT12339,
+m_movement8_TASK4_TASK0_AT12339,m_movement8_TASK0_TASK4_AT12339,
+m_movement8_TASK4_TASK3_AT12339,m_movement8_TASK3_TASK4_AT12339,
+m_movement8_TASK4_TASK1_AT12339,m_movement8_TASK1_TASK4_AT12339,
+m_movement8_TASK4_TASK2_AT12339,m_movement8_TASK2_TASK4_AT12339,
+m_movement9_TASK2_TASK0_AT12339,m_movement9_TASK0_TASK2_AT12339,
+m_movement9_TASK2_TASK3_AT12339,m_movement9_TASK3_TASK2_AT12339,
+m_movement9_TASK2_TASK1_AT12339,m_movement9_TASK1_TASK2_AT12339,
+m_movement9_TASK2_TASK4_AT12339,m_movement9_TASK4_TASK2_AT12339,
+
+
+/**tasks*/
+t_TaskExecutionTASK0_AT12340,t_TaskExecutionTASK0_AT12339,
+t_TaskExecutionTASK1_AT12340,t_TaskExecutionTASK1_AT12339,
+t_TaskExecutionTASK2_AT12340,t_TaskExecutionTASK2_AT12339,
+t_TaskExecutionTASK3_AT12340,t_TaskExecutionTASK3_AT12339,
+t_TaskExecutionTASK4_AT12340,t_TaskExecutionTASK4_AT12339;
+
+</system>
+	<queries>
+		<query>
+			<formula>E&lt;&gt; Rong.Win</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>strategy policy = maxE(var*50 - timeConsumption)[&lt;=TOTALTIME]{
+Rong.location,
+m_stone0Secondary0_TK0.location, m_secondary0Stone0_TK0.location, 
+m_primary0Secondary0_TK0.location, m_secondary0Primary0_TK0.location, 
+
+t_digging_WL0.location, t_unloading_WL0.location, 
+t_loadingFromWL_TK0.location, t_loadingFromPrimary_TK0.location, t_unloadingToSecond_TK0.location, 
+var,
+agents[0].a_position, agents[0].a_monitors[0], agents[0].a_task.t_id, agents[0].a_task.t_deviceUse.d_id, agents[0].a_task.t_deviceUse.d_position, agents[0].a_status[ID_DIG_WHEELLOADER], agents[0].a_status[ID_UNLOAD_TO_TRUCKS_WHEELLOADER],
+agents[1].a_position, agents[1].a_monitors[0], agents[1].a_task.t_id, agents[1].a_task.t_deviceUse.d_id, agents[1].a_task.t_deviceUse.d_position, agents[1].a_status[ID_LOAD_FROM_WHEELLOADERS_TRUCK], agents[1].a_status[ID_UNLOAD_TO_SECONDARY_TRUCK]
+}-&gt;{}:&lt;&gt; timeConsumption&gt;=TOTALTIME || Rong.Win</formula>
+			<comment/>
+		</query>
+	</queries>
+</nta>
