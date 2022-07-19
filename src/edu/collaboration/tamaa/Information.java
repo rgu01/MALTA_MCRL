@@ -48,12 +48,12 @@ public class Information {
 	private void initialize() {
 		frmMiddlewareOfMalta = new JFrame();
 		frmMiddlewareOfMalta.setResizable(false);
-		frmMiddlewareOfMalta.setTitle("Middleware of MALTA");
+		frmMiddlewareOfMalta.setTitle("MCRL: Middleware of MALTA");
 		frmMiddlewareOfMalta.setBounds(100, 100, 442, 283);
 		frmMiddlewareOfMalta.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmMiddlewareOfMalta.getContentPane().setLayout(null);
 		
-		JLabel lblNewLabel = new JLabel("The middleware of MALTA has ...");
+		JLabel lblNewLabel = new JLabel("The middleware of MALTA (MCRL) has ...");
 		lblNewLabel.setBackground(new Color(240, 240, 240));
 		lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		lblNewLabel.setBounds(10, 10, 350, 50);

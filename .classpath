@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="libs/commons-codec-1.9.jar"/>
+	<classpathentry kind="lib" path="libs/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="libs/dom4j-2.0.3.jar"/>
+	<classpathentry kind="lib" path="libs/httpclient-4.4.1.jar"/>
+	<classpathentry kind="lib" path="libs/httpcore-4.4.1.jar"/>
+	<classpathentry kind="lib" path="libs/javax.annotation.jar"/>
+	<classpathentry kind="lib" path="libs/javax.ejb.jar"/>
+	<classpathentry kind="lib" path="libs/javax.jms.jar"/>
+	<classpathentry kind="lib" path="libs/javax.persistence.jar"/>
+	<classpathentry kind="lib" path="libs/javax.resource.jar"/>
+	<classpathentry kind="lib" path="libs/javax.servlet.jar"/>
+	<classpathentry kind="lib" path="libs/javax.servlet.jsp.jar"/>
+	<classpathentry kind="lib" path="libs/javax.servlet.jsp.jstl.jar"/>
+	<classpathentry kind="lib" path="libs/javax.transaction.jar"/>
+	<classpathentry kind="lib" path="libs/libj2uppaal.jar"/>
+	<classpathentry kind="lib" path="libs/libthrift-0.9.2.jar"/>
+	<classpathentry kind="lib" path="libs/slf4j-api-1.7.12.jar"/>
+	<classpathentry kind="lib" path="libs/StaticLayer.jar"/>
+	<classpathentry kind="lib" path="libs/tamaa2mcrl.jar"/>
+	<classpathentry kind="lib" path="libs/ThetaStarQuadTree.jar"/>
+	<classpathentry kind="lib" path="libs/xmlParserAPIs-2.6.2.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
