@@ -104,7 +104,7 @@ public class WritingProcess{
 	private HashMap<Integer, Integer> DevicesID_Old_and_New = new HashMap<Integer, Integer>();
 	
 	/**
-	 * HashMap<String, HashMap<String,Integer>>  := key : taskid_t’s ID/name && value : HashMap<String,Integer>
+	 * HashMap<String, HashMap<String,Integer>>  := key : taskid_tâ€™s ID/name && value : HashMap<String,Integer>
 	 * HashMap<String,Integer>  := key : agent's ID/Name && value : task id												
 	 */
 	private HashMap<String, HashMap<String,Integer>> TasksID = new HashMap<String, HashMap<String,Integer>>();
@@ -345,7 +345,7 @@ public class WritingProcess{
 	        Transformer transformer = transformerFactory.newTransformer();
 	        DOMSource source = new DOMSource(doc);
 	        System.out.println("-----------Modified File-----------");
-	        StreamResult consoleResult = new StreamResult("res\\final_example.xml");
+	        StreamResult consoleResult = new StreamResult("model\\final_example.xml");
 	        transformer.transform(source, consoleResult);
 		    
 		}
