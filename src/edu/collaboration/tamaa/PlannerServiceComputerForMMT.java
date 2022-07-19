@@ -402,10 +402,6 @@ public class PlannerServiceComputerForMMT {
 	 */
 	private Task startMove(Node node, UPPAgentVehicle agent, long startTime) {
 		int taskID = InitialTaskID++;
-		if(taskID == 25)
-		{
-			taskID = 25;
-		}
 		Task transit = new Task();
 		Orientation bearing = new Orientation();
 		List<EquipmentType> requiredTypes = new java.util.ArrayList<EquipmentType>();
